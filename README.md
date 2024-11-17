@@ -25,7 +25,7 @@ This does not support nested objects (for now).
 
 This does not support arrays (for now).
 
-!> [!NOTE]
+> [!NOTE]
 > This is a working in progress. It's not ready for any kind of use.
 
 > [!WARNING]
