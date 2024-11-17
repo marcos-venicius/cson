@@ -37,8 +37,11 @@ This does not support arrays (for now).
     - don't return a parser to the final user, instead return only the "Cson" struct
     - check includes if there are any cycles or not "standard" usage
     - abstract some pieces of code that is redundant
+    - duplicated functions like `tk_kind_display`
 - Possible bugs
     - fix memory issues (free memory, right allocation, etc)
     - add tests to the parser to check if it's working well
 - support nested objects
 - support arrays with
+- better error reporting
+- code cleanup
