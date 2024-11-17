@@ -18,39 +18,26 @@ typedef enum {
 	TRUE_CSON_TOKEN,
 	FALSE_CSON_TOKEN,
 
-  // eof
 	EOF_CSON_TOKEN,
 } Cson_Token_Kind;
 
 typedef struct {
-  Cson_Token_Kind kind;
-  char* value;
-  int value_len;
-  struct Cson_Token* next;
+	Cson_Token_Kind kind;
+	char* value;
+	int value_len;
+	struct Cson_Token* next;
 } Cson_Token;
 
 typedef struct {
 	char* content;
-  int content_len;
-  int cursor;
-  int bot;
-  bool has_error;
-  Cson_Token* root;
-  Cson_Token* tail;
+	int content_len;
+	int cursor;
+	int bot;
+	bool has_error;
+	int tokens_len;
+	Cson_Token* root;
+	Cson_Token* tail;
 } Cson;
-
-typedef struct {
-  Cson_Token_Kind kind;
-  char* key;
-  char* value;
-  int value_len;
-} KeyPair;
-
-typedef struct {
-  int size;
-  KeyPair pairs[];
-} KeyPairs;
-
 
 void tokenize(Cson* cson);
 

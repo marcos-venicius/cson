@@ -1,7 +1,7 @@
 #include "./include/cson.h"
 
 int main() {
-    Cson* cson = cson_load("./examples/basic.json");
+    Parser* cson = cson_load("./examples/basic.json");
 
     if (cson == NULL) {
         return 1;
@@ -20,8 +20,6 @@ int main() {
     printf("%d\n", boolean_true_d);
     printf("%d\n", boolean_false_d);
     printf("%s\n", null_d);
-
-    cson_end(cson);
 
     return 0;
 }

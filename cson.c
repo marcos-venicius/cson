@@ -1,10 +1,11 @@
 #include "./include/cson.h"
 #include "./include/lexer.h"
+#include "./include/parser.h"
 #include "./include/io.h"
 #include <stdlib.h>
 #include <assert.h>
 
-Cson* cson_load(char* filepath) {
+Parser* cson_load(char* filepath) {
     assert(filepath != NULL && "input should not be null");
 
     char* content;
@@ -35,24 +36,28 @@ Cson* cson_load(char* filepath) {
 
     tokenize(cson);
 
-    return cson;
+    Parser* parser = parse(cson);
+
+    cson_end(cson);
+
+    return parser;
 }
 
-char* cson_read_string(Cson* cson, char* key) {
+char* cson_read_string(Parser* cson, char* key) {
     (void)cson;
     (void)key;
 
     return "";
 }
 
-double cson_read_double(Cson* cson, char* key) {
+double cson_read_double(Parser* cson, char* key) {
     (void)cson;
     (void)key;
 
     return 0.f;
 }
 
-bool cson_read_bool(Cson* cson, char* key) {
+bool cson_read_bool(Parser* cson, char* key) {
     (void)cson;
     (void)key;
 

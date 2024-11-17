@@ -61,6 +61,8 @@ int save_token(Cson* cson, Cson_Token_Kind kind) {
         cson->tail = token;
     }
 
+    cson->tokens_len++;
+
     return token->value_len;
 }
 
@@ -126,7 +128,7 @@ void save_number(Cson* cson) {
         return;
     }
 
-    save_token(cson, STRING_CSON_TOKEN);
+    save_token(cson, NUMBER_CSON_TOKEN);
 
     next(cson, 1);
 }
