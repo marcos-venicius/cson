@@ -40,7 +40,7 @@ void next(Cson* cson, int with) {
     }
 }
 
-int save_token(Cson* cson, Cson_Token_Kind kind) {
+int save_token_chunk(Cson* cson, Cson_Token_Kind kind, int from, int to) {
     Cson_Token* token = (Cson_Token*)malloc(sizeof(Cson_Token));
 
     if (token == NULL) {
@@ -49,8 +49,8 @@ int save_token(Cson* cson, Cson_Token_Kind kind) {
     }
 
     token->kind = kind;
-    token->value = &cson->content[cson->bot];
-    token->value_len = cson->cursor - cson->bot + 1;
+    token->value = &cson->content[from];
+    token->value_len = to;
     token->next = NULL;
 
     if (cson->tail == NULL) {
@@ -64,6 +64,10 @@ int save_token(Cson* cson, Cson_Token_Kind kind) {
     cson->tokens_len++;
 
     return token->value_len;
+}
+
+int save_token(Cson* cson, Cson_Token_Kind kind) {
+    return save_token_chunk(cson, kind, cson->bot, cson->cursor - cson->bot + 1);
 }
 
 void save_token_advance(Cson* cson, Cson_Token_Kind kind) {
@@ -83,7 +87,7 @@ void save_string(Cson* cson) {
         next(cson, 1);
     }
 
-    save_token(cson, STRING_CSON_TOKEN);
+    save_token_chunk(cson, STRING_CSON_TOKEN, cson->bot + 1, cson->cursor - cson->bot - 1);
 
     next(cson, 1);
 }
@@ -204,5 +208,5 @@ void tokenize(Cson* cson) {
         }
     }
 
-    print_tokens(cson);
+    //print_tokens(cson);
 }

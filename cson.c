@@ -4,6 +4,7 @@
 #include "./include/io.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 Parser* cson_load(char* filepath) {
     assert(filepath != NULL && "input should not be null");
@@ -44,22 +45,54 @@ Parser* cson_load(char* filepath) {
 }
 
 char* cson_read_string(Parser* cson, char* key) {
-    (void)cson;
-    (void)key;
+    // TODO: check types
+    // TODO: improve code structure and remove parser from here
+    for (int i = 0; i < cson->size; i++) {
+        KeyPair pair = cson->pairs[i];
 
-    return "";
+        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+            char* result = (char*)malloc(pair.value_len + 1);
+
+            strncpy(result, pair.value, pair.value_len);
+
+            result[pair.value_len] = '\0';
+
+            return result;
+        }
+    }
+
+    return NULL;
 }
 
 double cson_read_double(Parser* cson, char* key) {
-    (void)cson;
-    (void)key;
+    for (int i = 0; i < cson->size; i++) {
+        KeyPair pair = cson->pairs[i];
+
+        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+            char* result = (char*)malloc(pair.value_len + 1);
+            char* endptr;
+
+            strncpy(result, pair.value, pair.value_len);
+
+            result[pair.value_len] = '\0';
+
+            // TODO: check if everything is right, checking type
+            return strtod(result, &endptr);
+        }
+    }
 
     return 0.f;
 }
 
 bool cson_read_bool(Parser* cson, char* key) {
-    (void)cson;
-    (void)key;
+    for (int i = 0; i < cson->size; i++) {
+        KeyPair pair = cson->pairs[i];
+
+        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+            // TODO: check if the pair kind is true or false
+            return pair.kind == TRUE_CSON_TOKEN;
+        }
+    }
 
     return false;
 }

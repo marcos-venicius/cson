@@ -130,7 +130,7 @@ Parser* parse(Cson* cson) {
         parser->pairs[parser->size] = *pair;
         parser->size++;
 
-        printf("%s %.*s %.*s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value_len, pair->value);
+        //printf("%s %.*s %.*s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value_len, pair->value);
     }
 
     return parser;
