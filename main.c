@@ -1,7 +1,7 @@
 #include "./include/cson.h"
 
 int main() {
-    Parser* cson = cson_load("./examples/basic.json");
+    Cson* cson = cson_load("./examples/basic.json");
 
     char* output;
     char* lorem;

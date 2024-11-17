@@ -37,8 +37,10 @@ typedef struct {
 	int tokens_len;
 	Cson_Token* root;
 	Cson_Token* tail;
-} Cson;
+} Cson_Lexer;
 
-void tokenize(Cson* cson);
+void cson_lexer_free(Cson_Lexer* lexer);
+
+void tokenize(Cson_Lexer* cson);
 
 #endif // CSON_LEXER_H_

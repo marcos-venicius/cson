@@ -8,13 +8,15 @@
 #define INVALID_TYPE_RETURN (-1)
 #define OK_RETURN 0
 
-Parser* cson_load(char* filepath);
+typedef struct {
+    Parser* parser;
+} Cson;
+
+Cson* cson_load(char* filepath);
 
 char* error_explain(int code);
-int cson_read_string(Parser* cson, char* key, char** output);
-int cson_read_double(Parser* cson, char* key, double* output);
-int cson_read_bool(Parser* cson, char* key, bool* output);
-
-void cson_end(Cson* cson);
+int cson_read_string(Cson* cson, char* key, char** output);
+int cson_read_double(Cson* cson, char* key, double* output);
+int cson_read_bool(Cson* cson, char* key, bool* output);
 
 #endif // CSON_H_

@@ -16,6 +16,6 @@ typedef struct {
   KeyPair pairs[];
 } Parser;
 
-Parser* parse(Cson* cson);
+Parser* parse(Cson_Lexer* cson);
 
 #endif // CSON_PARSE_H_

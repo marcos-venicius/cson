@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <string.h>
 
-Parser* cson_load(char* filepath) {
+Cson* cson_load(char* filepath) {
     assert(filepath != NULL && "input should not be null");
 
     char* content;
@@ -17,43 +17,55 @@ Parser* cson_load(char* filepath) {
         return NULL;
     }
 
-    Cson* cson = malloc(sizeof(Cson));
+    Cson_Lexer* lexer = malloc(sizeof(Cson_Lexer));
 
-    if (cson == NULL) {
+    if (lexer == NULL) {
         free(content);
 
-        perror("could not allocate memory to the cson struct");
+        perror("could not allocate memory to the lexer struct");
 
         return NULL;
     }
 
-    cson->content = content;
-    cson->content_len = size;
-    cson->bot = 0;
-    cson->cursor = 0;
-    cson->has_error = false;
-    cson->root = NULL;
-    cson->tail = NULL;
+    lexer->content = content;
+    lexer->content_len = size;
+    lexer->bot = 0;
+    lexer->cursor = 0;
+    lexer->has_error = false;
+    lexer->root = NULL;
+    lexer->tail = NULL;
 
-    tokenize(cson);
+    tokenize(lexer);
 
-    Parser* parser = parse(cson);
+    Parser* parser = parse(lexer);
 
-    cson_end(cson);
+    cson_lexer_free(lexer);
 
-    return parser;
+    Cson* cson = malloc(sizeof(Cson));
+
+    if (cson == NULL) {
+        return NULL;
+    }
+
+    cson->parser = parser;
+
+    return cson;
 }
 
 bool is_kind(KeyPair* pair, Cson_Token_Kind kind) {
     return pair->kind == kind;
 }
 
-// FIXME: "test" == "test " but it should not occour
-int cson_read_string(Parser* cson, char* key, char** output) {
-    for (int i = 0; i < cson->size; i++) {
-        KeyPair pair = cson->pairs[i];
+bool match_keys(KeyPair* pair, char* key) {
+    return strncmp(pair->key, key, pair->key_len) == 0 && strlen(key) == pair->key_len;
+}
 
-        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+// FIXME: "test" == "test " but it should not occour
+int cson_read_string(Cson* cson, char* key, char** output) {
+    for (int i = 0; i < cson->parser->size; i++) {
+        KeyPair pair = cson->parser->pairs[i];
+
+        if (match_keys(&pair, key)) {
             if (is_kind(&pair, NULL_CSON_TOKEN)) {
                 return OK_RETURN;
             }
@@ -75,11 +87,11 @@ int cson_read_string(Parser* cson, char* key, char** output) {
     return NOT_FOUND_RETURN;
 }
 
-int cson_read_double(Parser* cson, char* key, double* output) {
-    for (int i = 0; i < cson->size; i++) {
-        KeyPair pair = cson->pairs[i];
+int cson_read_double(Cson* cson, char* key, double* output) {
+    for (int i = 0; i < cson->parser->size; i++) {
+        KeyPair pair = cson->parser->pairs[i];
 
-        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+        if (match_keys(&pair, key)) {
             if (is_kind(&pair, NULL_CSON_TOKEN)) {
                 return OK_RETURN;
             }
@@ -104,11 +116,11 @@ int cson_read_double(Parser* cson, char* key, double* output) {
     return NOT_FOUND_RETURN;
 }
 
-int cson_read_bool(Parser* cson, char* key, bool* output) {
-    for (int i = 0; i < cson->size; i++) {
-        KeyPair pair = cson->pairs[i];
+int cson_read_bool(Cson* cson, char* key, bool* output) {
+    for (int i = 0; i < cson->parser->size; i++) {
+        KeyPair pair = cson->parser->pairs[i];
 
-        if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+        if (match_keys(&pair, key)) {
             if (is_kind(&pair, NULL_CSON_TOKEN)) {
                 return OK_RETURN;
             }
@@ -124,16 +136,6 @@ int cson_read_bool(Parser* cson, char* key, bool* output) {
     }
 
     return NOT_FOUND_RETURN;
-}
-
-void cson_end(Cson* cson) {
-    Cson_Token* current = cson->root;
-
-    while (current != NULL) {
-        Cson_Token* next = current->next;
-        free(current);
-        current = next;
-    }
 }
 
 char* error_explain(int code) {

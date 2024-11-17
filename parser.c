@@ -1,22 +1,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include "./include/parser.h"
-
-static const char* tk_kind_display(Cson_Token_Kind kind) {
-    switch (kind) {
-        case LBRACE_CSON_TOKEN: return "LBRACE";
-        case RBRACE_CSON_TOKEN: return "RBRACE";
-        case COLON_CSON_TOKEN: return "COLON";
-        case COMMA_CSON_TOKEN: return "COMMA";
-        case STRING_CSON_TOKEN: return "STRING";
-        case NUMBER_CSON_TOKEN: return "NUMBER";
-        case NULL_CSON_TOKEN: return "NULL";
-        case TRUE_CSON_TOKEN: return "TRUE";
-        case FALSE_CSON_TOKEN: return "FALSE";
-        case EOF_CSON_TOKEN: return "EOF";
-        default: return "unknown";
-    }
-}
+#include "./include/common.h"
 
 void unexpected_token_error(Cson_Token* token, Cson_Token_Kind kind) {
     if (token == NULL) {
@@ -26,7 +11,7 @@ void unexpected_token_error(Cson_Token* token, Cson_Token_Kind kind) {
     }
 }
 
-Parser* init_parser(Cson* cson) {
+Parser* init_parser(Cson_Lexer* cson) {
     Parser* parser = (Parser*)malloc(sizeof(Parser) + cson->tokens_len * sizeof(KeyPair));
 
     if (parser == NULL) {
@@ -120,7 +105,7 @@ KeyPair* parse_expression(Parser* parser) {
     return pair;
 }
 
-Parser* parse(Cson* cson) {
+Parser* parse(Cson_Lexer* cson) {
 #if DEBUG
     printf("\n\nParsing:\n\n");
 #endif

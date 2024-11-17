@@ -1,24 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include "./include/lexer.h"
+#include "./include/common.h"
 
-static const char* tk_kind_display(Cson_Token_Kind kind) {
-    switch (kind) {
-        case LBRACE_CSON_TOKEN: return "LBRACE";
-        case RBRACE_CSON_TOKEN: return "RBRACE";
-        case COLON_CSON_TOKEN: return "COLON";
-        case COMMA_CSON_TOKEN: return "COMMA";
-        case STRING_CSON_TOKEN: return "STRING";
-        case NUMBER_CSON_TOKEN: return "NUMBER";
-        case NULL_CSON_TOKEN: return "NULL";
-        case TRUE_CSON_TOKEN: return "TRUE";
-        case FALSE_CSON_TOKEN: return "FALSE";
-        case EOF_CSON_TOKEN: return "EOF";
-        default: return "unknown";
-    }
-}
-
-char chr(Cson* cson) {
+char chr(Cson_Lexer* cson) {
     if (cson->cursor < cson->content_len) {
         return cson->content[cson->cursor];
     }
@@ -26,7 +11,7 @@ char chr(Cson* cson) {
     return '\0';
 }
 
-char nchr(Cson* cson) {
+char nchr(Cson_Lexer* cson) {
     if (cson->cursor < cson->content_len - 1) {
         return cson->content[cson->cursor + 1];
     }
@@ -34,13 +19,34 @@ char nchr(Cson* cson) {
     return '\0';
 }
 
-void next(Cson* cson, int with) {
+bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+bool is_valid_symbol_char(char c) {
+    switch (c) {
+        case 't':
+        case 'r':
+        case 'e':
+        case 'f':
+        case 'a':
+        case 's':
+        case 'n':
+        case 'u':
+        case 'l':
+            return true;
+        default:
+            return false;
+    }
+}
+
+void next(Cson_Lexer* cson, int with) {
     if (cson->cursor < cson->content_len) {
         cson->cursor += with;
     }
 }
 
-int save_token_chunk(Cson* cson, Cson_Token_Kind kind, int from, int to) {
+int save_token_chunk(Cson_Lexer* cson, Cson_Token_Kind kind, int from, int to) {
     Cson_Token* token = (Cson_Token*)malloc(sizeof(Cson_Token));
 
     if (token == NULL) {
@@ -66,11 +72,11 @@ int save_token_chunk(Cson* cson, Cson_Token_Kind kind, int from, int to) {
     return token->value_len;
 }
 
-int save_token(Cson* cson, Cson_Token_Kind kind) {
+int save_token(Cson_Lexer* cson, Cson_Token_Kind kind) {
     return save_token_chunk(cson, kind, cson->bot, cson->cursor - cson->bot + 1);
 }
 
-void save_token_advance(Cson* cson, Cson_Token_Kind kind) {
+void save_token_advance(Cson_Lexer* cson, Cson_Token_Kind kind) {
     int size = save_token(cson, kind);
 
     if (size == -1) {
@@ -80,7 +86,7 @@ void save_token_advance(Cson* cson, Cson_Token_Kind kind) {
     next(cson, size);
 }
 
-void save_string(Cson* cson) {
+void save_string(Cson_Lexer* cson) {
     next(cson, 1);
 
     while (chr(cson) != '"') {
@@ -92,28 +98,7 @@ void save_string(Cson* cson) {
     next(cson, 1);
 }
 
-bool is_digit(char c) {
-    return c >= '0' && c <= '9';
-}
-
-bool is_valid_symbol_char(char c) {
-    switch (c) {
-        case 't':
-        case 'r':
-        case 'e':
-        case 'f':
-        case 'a':
-        case 's':
-        case 'n':
-        case 'u':
-        case 'l':
-            return true;
-        default:
-            return false;
-    }
-}
-
-void save_number(Cson* cson) {
+void save_number(Cson_Lexer* cson) {
     while (is_digit(nchr(cson))) {
         next(cson, 1);
     }
@@ -137,7 +122,7 @@ void save_number(Cson* cson) {
     next(cson, 1);
 }
 
-void save_symbol(Cson* cson, char* symbol, Cson_Token_Kind kind) {
+void save_symbol(Cson_Lexer* cson, char* symbol, Cson_Token_Kind kind) {
     while (is_valid_symbol_char(nchr(cson))) {
         next(cson, 1);
     }
@@ -153,19 +138,19 @@ void save_symbol(Cson* cson, char* symbol, Cson_Token_Kind kind) {
     next(cson, 1);
 }
 
-void save_true(Cson* cson) {
+void save_true(Cson_Lexer* cson) {
     save_symbol(cson, "true", TRUE_CSON_TOKEN);
 }
 
-void save_false(Cson* cson) {
+void save_false(Cson_Lexer* cson) {
     save_symbol(cson, "false", FALSE_CSON_TOKEN);
 }
 
-void save_null(Cson* cson) {
+void save_null(Cson_Lexer* cson) {
     save_symbol(cson, "null", NULL_CSON_TOKEN);
 }
 
-void print_tokens(Cson* cson) {
+void print_tokens(Cson_Lexer* cson) {
     Cson_Token* current = cson->root;
 
     while (current != NULL) {
@@ -175,7 +160,7 @@ void print_tokens(Cson* cson) {
     }
 }
 
-void tokenize(Cson* cson) {
+void tokenize(Cson_Lexer* cson) {
     while (!cson->has_error) {
         cson->bot = cson->cursor;
 
@@ -211,4 +196,14 @@ void tokenize(Cson* cson) {
 #ifdef DEBUG
     print_tokens(cson);
 #endif
+}
+
+void cson_lexer_free(Cson_Lexer* lexer) {
+    Cson_Token* current = lexer->root;
+
+    while (current != NULL) {
+        Cson_Token* next = current->next;
+        free(current);
+        current = next;
+    }
 }
