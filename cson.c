@@ -1,6 +1,6 @@
-#include "./cson.h"
-#include "./lexer.h"
-#include "./io.h"
+#include "./include/cson.h"
+#include "./include/lexer.h"
+#include "./include/io.h"
 #include <stdlib.h>
 #include <assert.h>
 

@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "./lexer.h"
+#include "./include/lexer.h"
 
 static const char* tk_kind_display(Cson_Token_Kind kind) {
     switch (kind) {
@@ -201,4 +201,6 @@ void tokenize(Cson* cson) {
                 return;
         }
     }
+
+    print_tokens(cson);
 }

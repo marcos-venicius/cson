@@ -1,4 +1,4 @@
-#include "./cson.h"
+#include "./include/cson.h"
 
 int main() {
     Cson* cson = cson_load("./examples/basic.json");
@@ -20,8 +20,6 @@ int main() {
     printf("%d\n", boolean_true_d);
     printf("%d\n", boolean_false_d);
     printf("%s\n", null_d);
-
-    print_tokens(cson);
 
     cson_end(cson);
 
