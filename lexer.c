@@ -208,5 +208,7 @@ void tokenize(Cson* cson) {
         }
     }
 
-    //print_tokens(cson);
+#ifdef DEBUG
+    print_tokens(cson);
+#endif
 }

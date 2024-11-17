@@ -44,31 +44,50 @@ Parser* cson_load(char* filepath) {
     return parser;
 }
 
-char* cson_read_string(Parser* cson, char* key) {
-    // TODO: check types
-    // TODO: improve code structure and remove parser from here
+bool is_kind(KeyPair* pair, Cson_Token_Kind kind) {
+    return pair->kind == kind;
+}
+
+// FIXME: "test" == "test " but it should not occour
+int cson_read_string(Parser* cson, char* key, char** output) {
     for (int i = 0; i < cson->size; i++) {
         KeyPair pair = cson->pairs[i];
 
         if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
-            char* result = (char*)malloc(pair.value_len + 1);
+            if (is_kind(&pair, NULL_CSON_TOKEN)) {
+                return OK_RETURN;
+            }
 
-            strncpy(result, pair.value, pair.value_len);
+            if (!is_kind(&pair, STRING_CSON_TOKEN)) {
+                return INVALID_TYPE_RETURN;
+            }
 
-            result[pair.value_len] = '\0';
+            *output = (char*)malloc(pair.value_len + 1);
 
-            return result;
+            strncpy(*output, pair.value, pair.value_len);
+
+            (*output)[pair.value_len] = '\0';
+
+            return OK_RETURN;
         }
     }
 
-    return NULL;
+    return NOT_FOUND_RETURN;
 }
 
-double cson_read_double(Parser* cson, char* key) {
+int cson_read_double(Parser* cson, char* key, double* output) {
     for (int i = 0; i < cson->size; i++) {
         KeyPair pair = cson->pairs[i];
 
         if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
+            if (is_kind(&pair, NULL_CSON_TOKEN)) {
+                return OK_RETURN;
+            }
+
+            if (!is_kind(&pair, NUMBER_CSON_TOKEN)) {
+                return INVALID_TYPE_RETURN;
+            }
+
             char* result = (char*)malloc(pair.value_len + 1);
             char* endptr;
 
@@ -76,25 +95,35 @@ double cson_read_double(Parser* cson, char* key) {
 
             result[pair.value_len] = '\0';
 
-            // TODO: check if everything is right, checking type
-            return strtod(result, &endptr);
+            (*output) = strtod(result, &endptr);
+
+            return OK_RETURN;
         }
     }
 
-    return 0.f;
+    return NOT_FOUND_RETURN;
 }
 
-bool cson_read_bool(Parser* cson, char* key) {
+int cson_read_bool(Parser* cson, char* key, bool* output) {
     for (int i = 0; i < cson->size; i++) {
         KeyPair pair = cson->pairs[i];
 
         if (strncmp(pair.key, key, pair.key_len - 1) == 0) {
-            // TODO: check if the pair kind is true or false
-            return pair.kind == TRUE_CSON_TOKEN;
+            if (is_kind(&pair, NULL_CSON_TOKEN)) {
+                return OK_RETURN;
+            }
+
+            if (!is_kind(&pair, TRUE_CSON_TOKEN) && !is_kind(&pair, FALSE_CSON_TOKEN)) {
+                return INVALID_TYPE_RETURN;
+            }
+
+            (*output) = pair.kind == TRUE_CSON_TOKEN;
+
+            return OK_RETURN;
         }
     }
 
-    return false;
+    return NOT_FOUND_RETURN;
 }
 
 void cson_end(Cson* cson) {
@@ -104,5 +133,16 @@ void cson_end(Cson* cson) {
         Cson_Token* next = current->next;
         free(current);
         current = next;
+    }
+}
+
+char* error_explain(int code) {
+    switch (code) {
+        case NOT_FOUND_RETURN:
+            return "not found";
+        case INVALID_TYPE_RETURN:
+            return "invalid type";
+        default:
+            return "unexpected error";
     }
 }

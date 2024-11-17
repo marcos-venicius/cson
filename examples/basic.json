@@ -1,9 +1,7 @@
 {
-  "string": "This is a string in json",
-  "float": 3.1415,
-  "integer": 10,
-  "booleanTrue": true,
-  "booleanFalse": false,
-  "null": null,
-  "testing": "hello sdflkjsdflsdkfj"
-}
+
+  "url": "https://github.com/marcos-venicius/cson testinsl sdflkj sdf", "lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
+  "pi": 3.1415,
+
+  "active":     true}
+

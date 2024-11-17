@@ -3,30 +3,36 @@
 int main() {
     Parser* cson = cson_load("./examples/basic.json");
 
-    if (cson == NULL) {
+    char* output;
+    char* lorem;
+    double pi;
+    bool active;
+    int result;
+
+    if ((result = cson_read_string(cson, "url", &output)) != OK_RETURN) {
+        fprintf(stderr, "url: %s\n", error_explain(result));
         return 1;
     }
 
-    char* string_d = cson_read_string(cson, "string");
-    double float_d = cson_read_double(cson, "float");
-    double integer_d = cson_read_double(cson, "integer");
-    bool boolean_true_d = cson_read_bool(cson, "booleanTrue");
-    bool boolean_false_d = cson_read_bool(cson, "booleanFalse");
-    char* null_d = cson_read_string(cson, "null");
-    char* testing = cson_read_string(cson, "testing");
-
-    printf("%s\n", string_d);
-    printf("%lf\n", float_d);
-    printf("%lf\n", integer_d);
-    printf("%d\n", boolean_true_d);
-    printf("%d\n", boolean_false_d);
-    printf("%s\n", testing);
-
-    if (null_d == NULL) {
-        printf("NULL\n");
-    } else {
-        printf("%s\n", null_d);
+    if ((result = cson_read_string(cson, "lorem ipsum", &lorem)) != OK_RETURN) {
+        fprintf(stderr, "lorem ipsum: %s\n", error_explain(result));
+        return 1;
     }
+
+    if ((result = cson_read_double(cson, "pi", &pi)) != OK_RETURN) {
+        fprintf(stderr, "pi: %s\n", error_explain(result));
+        return 1;
+    }
+
+    if ((result = cson_read_bool(cson, "active", &active)) != OK_RETURN) {
+        fprintf(stderr, "active: %s\n", error_explain(result));
+        return 1;
+    }
+
+    printf("url: %s\n", output);
+    printf("lorem ipsum: %s\n", lorem);
+    printf("pi: %f\n", pi);
+    printf("active: %d\n", active);
 
     return 0;
 }
