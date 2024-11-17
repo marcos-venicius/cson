@@ -60,7 +60,6 @@ bool match_keys(KeyPair* pair, char* key) {
     return strncmp(pair->key, key, pair->key_len) == 0 && strlen(key) == pair->key_len;
 }
 
-// FIXME: "test" == "test " but it should not occour
 int cson_read_string(Cson* cson, char* key, char** output) {
     for (int i = 0; i < cson->parser->size; i++) {
         KeyPair pair = cson->parser->pairs[i];
