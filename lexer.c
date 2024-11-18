@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdio.h>
 #include "./include/lexer.h"
-#include "./include/common.h"
 
 void invalid_char_error(Cson_Lexer* lexer_cson) {
     lexer_cson->has_error = true;
@@ -53,6 +52,16 @@ bool is_valid_symbol_char(const char c) {
 void next(Cson_Lexer* lexer_cson, const int with) {
     if (lexer_cson->cursor < lexer_cson->content_len) {
         lexer_cson->cursor += with;
+    }
+}
+
+void append_token(Cson_Lexer* lexer_cson, Cson_Token* token) {
+    if (lexer_cson->tail == NULL) {
+        lexer_cson->root = token;
+        lexer_cson->tail = lexer_cson->root;
+    } else {
+        lexer_cson->tail->next = token;
+        lexer_cson->tail = token;
     }
 }
 
@@ -162,16 +171,6 @@ void save_null(Cson_Lexer* lexer_cson) {
     save_symbol(lexer_cson, "null", NULL_CSON_TOKEN);
 }
 
-void print_tokens(const Cson_Lexer* lexer_cson) {
-    const Cson_Token* current = lexer_cson->root;
-
-    while (current != NULL) {
-        printf("%s :: %.*s\n", tk_kind_display(current->kind), current->value_len, current->value);
-
-        current = current->next;
-    }
-}
-
 void tokenize(Cson_Lexer* lexer_cson) {
     while (!lexer_cson->has_error) {
         lexer_cson->bot = lexer_cson->cursor;
@@ -204,10 +203,23 @@ void tokenize(Cson_Lexer* lexer_cson) {
                 return;
         }
     }
+}
 
-#ifdef DEBUG
-    print_tokens(lexer_cson);
-#endif
+void lex(Cson_Lexer* cson_lexer) {
+    Cson_Token* current = cson_lexer->root;
+
+    cson_lexer->root = NULL;
+    cson_lexer->tail = NULL;
+
+    while (current != NULL) {
+        if (current->kind == STRING_CSON_TOKEN && current->next->kind == COLON_CSON_TOKEN) {
+            current->kind = KEY_CSON_TOKEN;
+        }
+
+        append_token(cson_lexer, current);
+
+        current = current->next;
+    }
 }
 
 void cson_lexer_free(const Cson_Lexer* lexer_cson) {

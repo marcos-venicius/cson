@@ -6,6 +6,7 @@ const char* tk_kind_display(const Cson_Token_Kind kind) {
         case RBRACE_CSON_TOKEN: return "RBRACE";
         case COLON_CSON_TOKEN: return "COLON";
         case COMMA_CSON_TOKEN: return "COMMA";
+        case KEY_CSON_TOKEN: return "KEY";
         case STRING_CSON_TOKEN: return "STRING";
         case NUMBER_CSON_TOKEN: return "NUMBER";
         case NULL_CSON_TOKEN: return "NULL";

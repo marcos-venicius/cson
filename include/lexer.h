@@ -10,6 +10,8 @@ typedef enum {
 	COLON_CSON_TOKEN,
 	COMMA_CSON_TOKEN,
 
+	KEY_CSON_TOKEN,
+
 	// types
 	STRING_CSON_TOKEN,
 	NUMBER_CSON_TOKEN,
@@ -44,5 +46,6 @@ typedef struct {
 void cson_lexer_free(const Cson_Lexer* lexer_cson);
 
 void tokenize(Cson_Lexer* lexer_cson);
+void lex(Cson_Lexer* cson_lexer);
 
 #endif // CSON_LEXER_H_

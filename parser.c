@@ -62,8 +62,8 @@ bool is(const Cson_Token* token, const int size, ...) {
 int parse_expression(Parser* parser, KeyPair** pair) {
     const Cson_Token* left = next_token(parser);
 
-    if (!is(left, 1, STRING_CSON_TOKEN)) {
-        unexpected_token_error(left, STRING_CSON_TOKEN);
+    if (!is(left, 1, KEY_CSON_TOKEN)) {
+        unexpected_token_error(left, KEY_CSON_TOKEN);
         return -1;
     }
 

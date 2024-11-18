@@ -2,10 +2,21 @@
 #include "./include/lexer.h"
 #include "./include/parser.h"
 #include "./include/io.h"
+#include "./include/common.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+
+static void print_tokens(const Cson_Lexer* lexer_cson) {
+    const Cson_Token* current = lexer_cson->root;
+
+    while (current != NULL) {
+        printf("%s :: %.*s\n", tk_kind_display(current->kind), current->value_len, current->value);
+
+        current = current->next;
+    }
+}
 
 Cson* cson_load(const char* filepath) {
     assert(filepath != NULL && "input should not be null");
@@ -37,6 +48,11 @@ Cson* cson_load(const char* filepath) {
     lexer->tail = NULL;
 
     tokenize(lexer);
+    lex(lexer);
+
+#ifdef DEBUG
+    print_tokens(lexer);
+#endif
 
     Parser* parser = parse(lexer);
 
