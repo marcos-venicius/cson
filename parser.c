@@ -1,9 +1,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include "./include/parser.h"
 #include "./include/common.h"
 
-void unexpected_token_error(Cson_Token* token, Cson_Token_Kind kind) {
+void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
     if (token == NULL) {
         fprintf(stderr, "missing expected \"%s\"\n", tk_kind_display(kind));
     } else {
@@ -11,8 +12,8 @@ void unexpected_token_error(Cson_Token* token, Cson_Token_Kind kind) {
     }
 }
 
-Parser* init_parser(Cson_Lexer* cson) {
-    Parser* parser = (Parser*)malloc(sizeof(Parser) + cson->tokens_len * sizeof(KeyPair));
+Parser* init_parser(const Cson_Lexer* lexer_cson) {
+    Parser* parser = malloc(sizeof(Parser) + lexer_cson->tokens_len * sizeof(KeyPair));
 
     if (parser == NULL) {
         perror("could not allocate memory to init the parser");
@@ -21,13 +22,13 @@ Parser* init_parser(Cson_Lexer* cson) {
     }
 
     parser->size = 0;
-    parser->root = cson->root;
+    parser->root = lexer_cson->root;
 
     return parser;
 }
 
 Cson_Token* next_token(Parser* parser) {
-    if (parser->root == NULL) {
+    if (parser->root->kind == EOF_CSON_TOKEN) {
         return NULL;
     }
 
@@ -36,7 +37,7 @@ Cson_Token* next_token(Parser* parser) {
     return parser->root;
 }
 
-bool is(Cson_Token* token, int size, ...) {
+bool is(const Cson_Token* token, const int size, ...) {
     if (token == NULL) {
         return false;
     }
@@ -45,7 +46,7 @@ bool is(Cson_Token* token, int size, ...) {
     va_start(args, size);
 
     for (int i = 0; i < size; i++) {
-        Cson_Token_Kind kind = va_arg(args, Cson_Token_Kind);
+        const Cson_Token_Kind kind = va_arg(args, Cson_Token_Kind);
 
         if (token->kind == kind) {
             va_end(args);
@@ -58,69 +59,69 @@ bool is(Cson_Token* token, int size, ...) {
     return false;
 }
 
-KeyPair* parse_expression(Parser* parser) {
-    if (is(parser->root, 2, EOF_CSON_TOKEN, RBRACE_CSON_TOKEN)) {
-        return NULL;
-    }
-
-    Cson_Token* left = next_token(parser);
+int parse_expression(Parser* parser, KeyPair** pair) {
+    const Cson_Token* left = next_token(parser);
 
     if (!is(left, 1, STRING_CSON_TOKEN)) {
         unexpected_token_error(left, STRING_CSON_TOKEN);
-        return NULL;
+        return -1;
     }
 
-    Cson_Token* middle = next_token(parser);
+    const Cson_Token* middle = next_token(parser);
 
     if (!is(middle, 1, COLON_CSON_TOKEN)) {
         unexpected_token_error(middle, COLON_CSON_TOKEN);
-        return NULL;
+        return -1;
     }
 
-    Cson_Token* right = next_token(parser);
+    const Cson_Token* right = next_token(parser);
 
     if (!is(right, 5, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN)) {
         unexpected_token_error(right, STRING_CSON_TOKEN);
-        return NULL;
+        return -1;
     }
 
-    KeyPair* pair = (KeyPair*)malloc(sizeof(KeyPair));
+    *pair = (KeyPair*)malloc(sizeof(KeyPair));
 
-    if (pair == NULL) {
+    if (*pair == NULL) {
         fprintf(stderr, "could not allocate memory for key/pair");
 
-        return NULL;
+        return -1;
     }
 
-    pair->key = left->value;
-    pair->key_len = left->value_len;
+    (*pair)->key = left->value;
+    (*pair)->key_len = left->value_len;
 
-    pair->value = right->value;
-    pair->value_len = right->value_len;
+    (*pair)->value = right->value;
+    (*pair)->value_len = right->value_len;
 
-    pair->kind = right->kind;
+    (*pair)->kind = right->kind;
 
     next_token(parser);
 
-    return pair;
+    return 0;
 }
 
-Parser* parse(Cson_Lexer* cson) {
+Parser* parse(Cson_Lexer* lexer_cson) {
 #if DEBUG
     printf("\n\nParsing:\n\n");
 #endif
 
-    Parser* parser = init_parser(cson);
+    Parser* parser = init_parser(lexer_cson);
 
-    Cson_Token* current = cson->root;
+    if (parser == NULL) {
+        return NULL;
+    }
+
+    const Cson_Token* current = lexer_cson->root;
 
     if (is(current, 1, EOF_CSON_TOKEN)) {
         return parser;
     }
 
     if (!is(current, 1, LBRACE_CSON_TOKEN)) {
-        fprintf(stderr, "Unexpected \"%.*s\"\n", current->value_len, current->value);
-        return parser;
+        unexpected_token_error(current, LBRACE_CSON_TOKEN);
+        return NULL;
     }
 
     if (is(current, 1, RBRACE_CSON_TOKEN)) {
@@ -128,10 +129,17 @@ Parser* parse(Cson_Lexer* cson) {
     }
 
     while (!is(parser->root, 1, EOF_CSON_TOKEN)) {
-        KeyPair* pair = parse_expression(parser);
+        if (is(parser->root, 1, RBRACE_CSON_TOKEN) || is(parser->root->next, 1, RBRACE_CSON_TOKEN)) {
+            next_token(parser);
+            continue;
+        }
 
-        if (pair == NULL) {
-            break;
+        KeyPair* pair;
+        
+        const int result = parse_expression(parser, &pair);
+
+        if (result == -1) {
+            exit(1);
         }
 
         parser->pairs[parser->size] = *pair;
