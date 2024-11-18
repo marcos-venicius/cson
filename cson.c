@@ -6,12 +6,12 @@
 #include <assert.h>
 #include <string.h>
 
-Cson* cson_load(char* filepath) {
+Cson* cson_load(const char* filepath) {
     assert(filepath != NULL && "input should not be null");
 
     char* content;
 
-    int size = read_file_content(filepath, &content);
+    const int size = read_file_content(filepath, &content);
 
     if (size == -1) {
         return NULL;
@@ -41,6 +41,10 @@ Cson* cson_load(char* filepath) {
 
     cson_lexer_free(lexer);
 
+    if (parser == NULL) {
+        return NULL;
+    }
+
     Cson* cson = malloc(sizeof(Cson));
 
     if (cson == NULL) {
@@ -52,15 +56,15 @@ Cson* cson_load(char* filepath) {
     return cson;
 }
 
-bool is_kind(KeyPair* pair, Cson_Token_Kind kind) {
+bool is_kind(const KeyPair* pair, const Cson_Token_Kind kind) {
     return pair->kind == kind;
 }
 
-bool match_keys(KeyPair* pair, char* key) {
-    return strncmp(pair->key, key, pair->key_len) == 0 && strlen(key) == pair->key_len;
+bool match_keys(const KeyPair* pair, const char* key) {
+    return strncmp(pair->key, key, pair->key_len) == 0 && strlen(key) == (size_t)pair->key_len;
 }
 
-int cson_read_string(Cson* cson, char* key, char** output) {
+int cson_read_string(const Cson* cson, const char* key, char** output) {
     for (int i = 0; i < cson->parser->size; i++) {
         KeyPair pair = cson->parser->pairs[i];
 
@@ -86,7 +90,7 @@ int cson_read_string(Cson* cson, char* key, char** output) {
     return NOT_FOUND_RETURN;
 }
 
-int cson_read_double(Cson* cson, char* key, double* output) {
+int cson_read_double(const Cson* cson, const char* key, double* output) {
     for (int i = 0; i < cson->parser->size; i++) {
         KeyPair pair = cson->parser->pairs[i];
 
@@ -99,14 +103,16 @@ int cson_read_double(Cson* cson, char* key, double* output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            char* result = (char*)malloc(pair.value_len + 1);
+            char* result = malloc(pair.value_len + 1);
             char* endptr;
 
             strncpy(result, pair.value, pair.value_len);
 
             result[pair.value_len] = '\0';
 
-            (*output) = strtod(result, &endptr);
+            *output = strtod(result, &endptr);
+
+            free(result);
 
             return OK_RETURN;
         }
@@ -115,7 +121,7 @@ int cson_read_double(Cson* cson, char* key, double* output) {
     return NOT_FOUND_RETURN;
 }
 
-int cson_read_bool(Cson* cson, char* key, bool* output) {
+int cson_read_bool(const Cson* cson, const char* key, bool* output) {
     for (int i = 0; i < cson->parser->size; i++) {
         KeyPair pair = cson->parser->pairs[i];
 
@@ -128,7 +134,7 @@ int cson_read_bool(Cson* cson, char* key, bool* output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            (*output) = pair.kind == TRUE_CSON_TOKEN;
+            *output = pair.kind == TRUE_CSON_TOKEN;
 
             return OK_RETURN;
         }
@@ -137,7 +143,7 @@ int cson_read_bool(Cson* cson, char* key, bool* output) {
     return NOT_FOUND_RETURN;
 }
 
-char* error_explain(int code) {
+char* error_explain(const int code) {
     switch (code) {
         case NOT_FOUND_RETURN:
             return "not found";
