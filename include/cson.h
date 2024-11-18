@@ -12,11 +12,11 @@ typedef struct {
     Parser* parser;
 } Cson;
 
-Cson* cson_load(char* filepath);
+Cson* cson_load(const char* filepath);
 
 char* error_explain(int code);
-int cson_read_string(Cson* cson, char* key, char** output);
-int cson_read_double(Cson* cson, char* key, double* output);
-int cson_read_bool(Cson* cson, char* key, bool* output);
+int cson_read_string(const Cson* cson, const char* key, char** output);
+int cson_read_double(const Cson* cson, const char* key, double* output);
+int cson_read_bool(const Cson* cson, const char* key, bool* output);
 
 #endif // CSON_H_
