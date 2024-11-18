@@ -6,6 +6,9 @@ _A simple and stupid JSON decoder in C_
 
 ```bash
 make
+
+# Debug
+make DEBUG=1
 ```
 
 ```bash
@@ -34,9 +37,7 @@ This does not support arrays (for now).
 ## Next improvements
 
 - Possible bugs
-    - fix memory issues (free memory, right allocation, etc)
     - add tests to the parser to check if it's working well
 - support nested objects
-- support arrays with
+- support arrays
 - better error reporting
-- code cleanup
