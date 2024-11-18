@@ -1,7 +1,6 @@
 #ifndef CSON_LEXER_H_
 #define CSON_LEXER_H_
 
-#include <stdio.h>
 #include <stdbool.h>
 
 typedef enum {
@@ -21,12 +20,15 @@ typedef enum {
 	EOF_CSON_TOKEN,
 } Cson_Token_Kind;
 
-typedef struct {
+
+typedef struct Cson_Token Cson_Token;
+
+struct Cson_Token {
 	Cson_Token_Kind kind;
 	char* value;
 	int value_len;
-	struct Cson_Token* next;
-} Cson_Token;
+	Cson_Token* next;
+};
 
 typedef struct {
 	char* content;
@@ -39,8 +41,8 @@ typedef struct {
 	Cson_Token* tail;
 } Cson_Lexer;
 
-void cson_lexer_free(Cson_Lexer* lexer);
+void cson_lexer_free(const Cson_Lexer* lexer_cson);
 
-void tokenize(Cson_Lexer* cson);
+void tokenize(Cson_Lexer* lexer_cson);
 
 #endif // CSON_LEXER_H_
