@@ -1,7 +1,12 @@
+#include <stdio.h>
 #include "./include/cson.h"
 
 int main() {
-    Cson* cson = cson_load("./examples/basic.json");
+    const Cson* cson = cson_load("./examples/basic.json");
+
+    if (cson == NULL) {
+        return 1;
+    }
 
     char* output;
     char* lorem;

@@ -1,6 +1,6 @@
 #include "./include/common.h"
 
-const char* tk_kind_display(Cson_Token_Kind kind) {
+const char* tk_kind_display(const Cson_Token_Kind kind) {
     switch (kind) {
         case LBRACE_CSON_TOKEN: return "LBRACE";
         case RBRACE_CSON_TOKEN: return "RBRACE";

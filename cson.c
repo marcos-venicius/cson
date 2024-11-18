@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stdio.h>
 
 Cson* cson_load(const char* filepath) {
     assert(filepath != NULL && "input should not be null");
