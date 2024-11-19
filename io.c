@@ -40,7 +40,7 @@ int read_file_content(const char* filename, char** output) {
     *output = (char*)malloc(read_size * sizeof(char));
 
     if (*output != NULL) {
-        strcpy(*output, content);
+        strncpy(*output, content, file_size);
     } else {
         perror("Could not allocate memory for the output json");
         free(content);

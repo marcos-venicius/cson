@@ -41,6 +41,7 @@ Cson* cson_load(const char* filepath) {
 
     lexer->content = content;
     lexer->content_len = size;
+    lexer->tokens_len = 0;
     lexer->bot = 0;
     lexer->cursor = 0;
     lexer->has_error = false;
@@ -94,11 +95,7 @@ int cson_read_string(const Cson* cson, const char* key, char** output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            *output = (char*)malloc(pair.value_len + 1);
-
-            strncpy(*output, pair.value, pair.value_len);
-
-            (*output)[pair.value_len] = '\0';
+            *output = pair.value;
 
             return OK_RETURN;
         }
@@ -120,12 +117,8 @@ int cson_read_double(const Cson* cson, const char* key, double* output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            char* result = malloc(pair.value_len + 1);
+            char* result = pair.value;
             char* endptr;
-
-            strncpy(result, pair.value, pair.value_len);
-
-            result[pair.value_len] = '\0';
 
             *output = strtod(result, &endptr);
 

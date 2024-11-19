@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include "./include/parser.h"
 #include "./include/common.h"
+#include "include/lexer.h"
 
 void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
     if (token == NULL) {
@@ -13,7 +15,9 @@ void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind)
 }
 
 Parser* init_parser(const Cson_Lexer* lexer_cson) {
-    Parser* parser = malloc(sizeof(Parser) + lexer_cson->tokens_len * sizeof(KeyPair));
+    size_t parser_size = sizeof(Parser) + lexer_cson->tokens_len * sizeof(KeyPair);
+
+    Parser* parser = malloc(parser_size);
 
     if (parser == NULL) {
         perror("could not allocate memory to init the parser");
@@ -59,7 +63,7 @@ bool is(const Cson_Token* token, const int size, ...) {
     return false;
 }
 
-int parse_expression(Parser* parser, KeyPair** pair) {
+int parse_expression(Parser* parser, KeyPair** pair, const char* prefix) {
     const Cson_Token* left = next_token(parser);
 
     if (!is(left, 1, KEY_CSON_TOKEN)) {
@@ -89,11 +93,19 @@ int parse_expression(Parser* parser, KeyPair** pair) {
         return -1;
     }
 
-    (*pair)->key = left->value;
-    (*pair)->key_len = left->value_len;
+    const int size = strlen(prefix);
+    const int final_size = left->value_len + size + 1;
 
-    (*pair)->value = right->value;
-    (*pair)->value_len = right->value_len;
+    char* key = malloc(final_size);
+    char* value = malloc(right->value_len + 1);
+
+    snprintf(key, final_size, "%s%s", prefix, left->value);
+    snprintf(value, right->value_len + 1, "%s", right->value);
+
+    (*pair)->key = key;
+    (*pair)->key_len = final_size - 1;
+
+    (*pair)->value = value;
 
     (*pair)->kind = right->kind;
 
@@ -135,8 +147,7 @@ Parser* parse(Cson_Lexer* lexer_cson) {
         }
 
         KeyPair* pair;
-        
-        const int result = parse_expression(parser, &pair);
+        int result = parse_expression(parser, &pair, "");
 
         if (result == -1) {
             exit(1);

@@ -7,7 +7,6 @@ typedef struct {
   char* key;
   int key_len;
   char* value;
-  int value_len;
 } KeyPair;
 
 typedef struct {

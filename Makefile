@@ -1,7 +1,6 @@
 CXX = gcc
 CXXFLAGS = -Wall -Wextra
-DEBUG_FLAGS = -g -DDEBUG
-
+DEBUG_FLAGS = -g -DDEBUG -fsanitize=address
 
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)

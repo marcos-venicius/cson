@@ -86,8 +86,6 @@ int save_token_chunk(Cson_Lexer* lexer_cson, const Cson_Token_Kind kind, const i
         lexer_cson->tail = token;
     }
 
-    lexer_cson->tokens_len++;
-
     return token->value_len;
 }
 
@@ -101,6 +99,8 @@ void save_token_advance(Cson_Lexer* lexer_cson, const Cson_Token_Kind kind) {
     if (size == -1) {
         return;
     }
+
+    lexer_cson->tokens_len++;
 
     next(lexer_cson, size);
 }
@@ -222,7 +222,7 @@ void lex(Cson_Lexer* cson_lexer) {
     }
 }
 
-void cson_lexer_free(const Cson_Lexer* lexer_cson) {
+void cson_lexer_free(Cson_Lexer* lexer_cson) {
     Cson_Token* current = lexer_cson->root;
 
     while (current != NULL) {
@@ -230,4 +230,7 @@ void cson_lexer_free(const Cson_Lexer* lexer_cson) {
         free(current);
         current = next;
     }
+
+    free(lexer_cson->content);
+    free(lexer_cson);
 }

@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include "./include/cson.h"
+#include <stdlib.h>
 
 int main() {
-    const Cson* cson = cson_load("./examples/basic.json");
+    Cson* cson = cson_load("./examples/basic.json");
 
     if (cson == NULL) {
         return 1;
@@ -38,6 +39,8 @@ int main() {
     printf("lorem ipsum: %s\n", lorem);
     printf("pi: %f\n", pi);
     printf("active: %d\n", active);
+
+    free(cson);
 
     return 0;
 }
