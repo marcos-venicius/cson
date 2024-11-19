@@ -147,6 +147,8 @@ int parse_json(Parser* parser, const char* prefix) {
     parser->pairs[parser->size] = *pair;
     parser->size++;
 
+    free(pair);
+
     if (parser->root->kind == EOF_CSON_TOKEN) return 0;
 
     return parse_json(parser, prefix);
@@ -188,9 +190,5 @@ Parser* parse(Cson_Lexer* lexer_cson) {
 }
 
 void parser_cleanup(Parser* parser) {
-    for (int i = 0; i < parser->size; i++) {
-        free(&parser->pairs[i]);
-    }
-    free(parser->root);
     free(parser);
 }
