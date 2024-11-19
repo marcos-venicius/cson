@@ -34,8 +34,8 @@ struct Cson_Token {
 
 typedef struct {
 	char* content;
-	int content_len;
-	int cursor;
+	unsigned long content_len;
+	unsigned long cursor;
 	int bot;
 	bool has_error;
 	int tokens_len;

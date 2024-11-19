@@ -23,9 +23,9 @@ Cson* cson_load(const char* filepath) {
 
     char* content;
 
-    const int size = read_file_content(filepath, &content);
+    const unsigned long size = read_file_content(filepath, &content);
 
-    if (size == -1) {
+    if (size == 0) {
         return NULL;
     }
 
@@ -87,7 +87,7 @@ bool is_kind(const KeyPair* pair, const Cson_Token_Kind kind) {
 }
 
 bool match_keys(const KeyPair* pair, const char* key) {
-    return strlen(key) == pair->key_len && strncmp(pair->key, key, pair->key_len) == 0;
+    return (int)strlen(key) == pair->key_len && strncmp(pair->key, key, pair->key_len) == 0;
 }
 
 int cson_read_string(const Cson* cson, const char* key, char** output) {

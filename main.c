@@ -40,6 +40,7 @@ int main() {
     printf("pi: %f\n", pi);
     printf("active: %d\n", active);
 
+    parser_cleanup(cson->parser);
     free(cson);
 
     return 0;

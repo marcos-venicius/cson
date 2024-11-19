@@ -6,7 +6,7 @@
 #include "./include/common.h"
 #include "include/lexer.h"
 
-char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, const char* obj_two_key, const int obj_two_key_size) {
+char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
     int join_string_size = 1;
 
     if (obj_one_key_size == 0) {
@@ -15,7 +15,7 @@ char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, 
 
     const int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size + 1;
 
-    char* result = malloc(final_size);
+    char* result = malloc(final_size * sizeof(char));
 
     if (obj_one_key_size == 0) {
         snprintf(result, final_size, "%s", obj_two_key);
@@ -83,7 +83,7 @@ bool is(const Cson_Token* token, const int size, ...) {
     return false;
 }
 
-int parse_expression(Parser* parser, const char* prefix) {
+int parse_json(Parser* parser, const char* prefix) {
     const Cson_Token* left = next_token(parser);
 
     if (is(left, 2, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN)) {
@@ -108,7 +108,7 @@ int parse_expression(Parser* parser, const char* prefix) {
     if (is(right, 1, LBRACE_CSON_TOKEN)) {
         const char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
 
-        return parse_expression(parser, key);
+        return parse_json(parser, key);
     }
 
     if (!is(right, 5, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN)) {
@@ -140,12 +140,16 @@ int parse_expression(Parser* parser, const char* prefix) {
 
     next_token(parser);
 
+#if DEBUG
+        printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
+#endif
+
     parser->pairs[parser->size] = *pair;
     parser->size++;
 
     if (parser->root->kind == EOF_CSON_TOKEN) return 0;
 
-    return parse_expression(parser, prefix);
+    return parse_json(parser, prefix);
 }
 
 Parser* parse(Cson_Lexer* lexer_cson) {
@@ -174,15 +178,19 @@ Parser* parse(Cson_Lexer* lexer_cson) {
         return parser;
     }
 
-    const int result = parse_expression(parser, "");
+    const int result = parse_json(parser, "");
 
     if (result == -1) {
         exit(1);
     }
 
-#if DEBUG
-        printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
-#endif
-
     return parser;
+}
+
+void parser_cleanup(Parser* parser) {
+    for (int i = 0; i < parser->size; i++) {
+        free(&parser->pairs[i]);
+    }
+    free(parser->root);
+    free(parser);
 }
