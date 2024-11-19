@@ -86,7 +86,7 @@ bool is(const Cson_Token* token, const int size, ...) {
 int parse_expression(Parser* parser, const char* prefix) {
     const Cson_Token* left = next_token(parser);
 
-    if (is(left, 1, RBRACE_CSON_TOKEN)) {
+    if (is(left, 2, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN)) {
         next_token(parser);
         return 0;
     }
