@@ -6,6 +6,26 @@
 #include "./include/common.h"
 #include "include/lexer.h"
 
+char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, const char* obj_two_key, const int obj_two_key_size) {
+    int join_string_size = 1;
+
+    if (obj_one_key_size == 0) {
+        join_string_size = 0;
+    }
+
+    const int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size + 1;
+
+    char* result = malloc(final_size);
+
+    if (obj_one_key_size == 0) {
+        snprintf(result, final_size, "%s", obj_two_key);
+    } else {
+        snprintf(result, final_size, "%s.%s", obj_one_key, obj_two_key);
+    }
+
+    return result;
+}
+
 void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
     if (token == NULL) {
         fprintf(stderr, "missing expected \"%s\"\n", tk_kind_display(kind));
@@ -15,7 +35,7 @@ void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind)
 }
 
 Parser* init_parser(const Cson_Lexer* lexer_cson) {
-    size_t parser_size = sizeof(Parser) + lexer_cson->tokens_len * sizeof(KeyPair);
+    const size_t parser_size = sizeof(Parser) + lexer_cson->tokens_len * sizeof(KeyPair);
 
     Parser* parser = malloc(parser_size);
 
@@ -63,8 +83,13 @@ bool is(const Cson_Token* token, const int size, ...) {
     return false;
 }
 
-int parse_expression(Parser* parser, KeyPair** pair, const char* prefix) {
+int parse_expression(Parser* parser, const char* prefix) {
     const Cson_Token* left = next_token(parser);
+
+    if (is(left, 1, RBRACE_CSON_TOKEN)) {
+        next_token(parser);
+        return 0;
+    }
 
     if (!is(left, 1, KEY_CSON_TOKEN)) {
         unexpected_token_error(left, KEY_CSON_TOKEN);
@@ -80,38 +105,47 @@ int parse_expression(Parser* parser, KeyPair** pair, const char* prefix) {
 
     const Cson_Token* right = next_token(parser);
 
+    if (is(right, 1, LBRACE_CSON_TOKEN)) {
+        const char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
+
+        return parse_expression(parser, key);
+    }
+
     if (!is(right, 5, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN)) {
         unexpected_token_error(right, STRING_CSON_TOKEN);
         return -1;
     }
 
-    *pair = (KeyPair*)malloc(sizeof(KeyPair));
+    KeyPair* pair = malloc(sizeof(KeyPair));
 
-    if (*pair == NULL) {
+    if (pair == NULL) {
         fprintf(stderr, "could not allocate memory for key/pair");
 
         return -1;
     }
 
-    const int size = strlen(prefix);
-    const int final_size = left->value_len + size + 1;
+    const size_t prefix_len = strlen(prefix);
 
-    char* key = malloc(final_size);
+    char* key = nested_object_key(prefix, prefix_len, left->value, left->value_len);
     char* value = malloc(right->value_len + 1);
 
-    snprintf(key, final_size, "%s%s", prefix, left->value);
     snprintf(value, right->value_len + 1, "%s", right->value);
 
-    (*pair)->key = key;
-    (*pair)->key_len = final_size - 1;
+    pair->key = key;
+    pair->key_len = (int)strlen(key);
 
-    (*pair)->value = value;
+    pair->value = value;
 
-    (*pair)->kind = right->kind;
+    pair->kind = right->kind;
 
     next_token(parser);
 
-    return 0;
+    parser->pairs[parser->size] = *pair;
+    parser->size++;
+
+    if (parser->root->kind == EOF_CSON_TOKEN) return 0;
+
+    return parse_expression(parser, prefix);
 }
 
 Parser* parse(Cson_Lexer* lexer_cson) {
@@ -140,26 +174,15 @@ Parser* parse(Cson_Lexer* lexer_cson) {
         return parser;
     }
 
-    while (!is(parser->root, 1, EOF_CSON_TOKEN)) {
-        if (is(parser->root, 1, RBRACE_CSON_TOKEN) || is(parser->root->next, 1, RBRACE_CSON_TOKEN)) {
-            next_token(parser);
-            continue;
-        }
+    const int result = parse_expression(parser, "");
 
-        KeyPair* pair;
-        int result = parse_expression(parser, &pair, "");
-
-        if (result == -1) {
-            exit(1);
-        }
-
-        parser->pairs[parser->size] = *pair;
-        parser->size++;
+    if (result == -1) {
+        exit(1);
+    }
 
 #if DEBUG
-        printf("%s %.*s %.*s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value_len, pair->value);
+        printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
 #endif
-    }
 
     return parser;
 }

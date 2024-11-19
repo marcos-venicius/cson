@@ -15,7 +15,7 @@ int main() {
     bool active;
     int result;
 
-    if ((result = cson_read_string(cson, "url", &output)) != OK_RETURN) {
+    if ((result = cson_read_string(cson, "inner.nested.key", &output)) != OK_RETURN) {
         fprintf(stderr, "url: %s\n", error_explain(result));
         return 1;
     }
@@ -35,7 +35,7 @@ int main() {
         return 1;
     }
 
-    printf("url: %s\n", output);
+    printf("Nested field: %s\n", output);
     printf("lorem ipsum: %s\n", lorem);
     printf("pi: %f\n", pi);
     printf("active: %d\n", active);
