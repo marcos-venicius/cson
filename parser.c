@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "./include/parser.h"
 #include "./include/common.h"
 #include "include/lexer.h"
@@ -61,21 +62,32 @@ Cson_Token* next_token(Parser* parser) {
     return parser->root;
 }
 
-bool is(const Cson_Token* token, const int size, ...) {
+// This function expects any number of tokens (Cson_Token_Kind), but it should have a -1 at the end
+bool is(const Cson_Token* token, ...) {
     if (token == NULL) {
         return false;
     }
 
+    int tokens_count = TOKENS_COUNT;
     va_list args;
-    va_start(args, size);
+    va_start(args, token);
 
-    for (int i = 0; i < size; i++) {
-        const Cson_Token_Kind kind = va_arg(args, Cson_Token_Kind);
+    Cson_Token_Kind kind = va_arg(args, Cson_Token_Kind);
+
+    while ((int)kind != -1) {
+        assert(kind >= 0 && "This token kind does not exists");
+        assert(kind <= EOF_CSON_TOKEN && "This token kind does not exists");
 
         if (token->kind == kind) {
             va_end(args);
             return true;
         }
+
+        --tokens_count;
+
+        assert(tokens_count >= 0 && "invalid number of tokens passed to \"is\" function or missing -1 at the end of the arguments");
+
+        kind = va_arg(args, Cson_Token_Kind);
     }
 
     va_end(args);
@@ -86,32 +98,32 @@ bool is(const Cson_Token* token, const int size, ...) {
 int parse_json(Parser* parser, const char* prefix) {
     const Cson_Token* left = next_token(parser);
 
-    if (is(left, 2, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN)) {
+    if (is(left, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN, -1)) {
         next_token(parser);
         return 0;
     }
 
-    if (!is(left, 1, KEY_CSON_TOKEN)) {
+    if (!is(left, KEY_CSON_TOKEN, -1)) {
         unexpected_token_error(left, KEY_CSON_TOKEN);
         return -1;
     }
 
     const Cson_Token* middle = next_token(parser);
 
-    if (!is(middle, 1, COLON_CSON_TOKEN)) {
+    if (!is(middle, COLON_CSON_TOKEN, -1)) {
         unexpected_token_error(middle, COLON_CSON_TOKEN);
         return -1;
     }
 
     const Cson_Token* right = next_token(parser);
 
-    if (is(right, 1, LBRACE_CSON_TOKEN)) {
+    if (is(right, LBRACE_CSON_TOKEN, -1)) {
         const char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
 
         return parse_json(parser, key);
     }
 
-    if (!is(right, 5, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN)) {
+    if (!is(right, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
         unexpected_token_error(right, STRING_CSON_TOKEN);
         return -1;
     }
@@ -167,22 +179,20 @@ Parser* parse(Cson_Lexer* lexer_cson) {
 
     const Cson_Token* current = lexer_cson->root;
 
-    if (is(current, 1, EOF_CSON_TOKEN)) {
+    if (is(current, EOF_CSON_TOKEN, -1)) {
         return parser;
     }
 
-    if (!is(current, 1, LBRACE_CSON_TOKEN)) {
+    if (!is(current, LBRACE_CSON_TOKEN, -1)) {
         unexpected_token_error(current, LBRACE_CSON_TOKEN);
         return NULL;
     }
 
-    if (is(current, 1, RBRACE_CSON_TOKEN)) {
+    if (is(current, RBRACE_CSON_TOKEN, -1)) {
         return parser;
     }
 
-    const int result = parse_json(parser, "");
-
-    if (result == -1) {
+    if (parse_json(parser, "") == -1) {
         exit(1);
     }
 
