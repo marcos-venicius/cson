@@ -8,6 +8,9 @@ OBJ = $(SRC:.c=.o)
 BASIC_OBJ=basic_example.o $(OBJ)
 BASIC_TARGET = basic
 
+NESTED_OBJECTS_OBJ=nested_objects_example.o $(OBJ)
+NESTED_OBJECTS_TARGET = nested_objects
+
 ifeq ($(DEBUG), 1)
 	CXXFLAGS += $(DEBUG_FLAGS)
 endif
@@ -19,8 +22,11 @@ endif
 $(BASIC_TARGET): $(BASIC_OBJ)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
+$(NESTED_OBJECTS_TARGET): $(NESTED_OBJECTS_OBJ)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
 %.o: %.c
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -rf $(BASIC_OBJ) $(OBJ) $(BASIC_TARGET)
+	rm -rf $(BASIC_OBJ)  $(BASIC_TARGET) $(NESTED_OBJECTS_OBJ) $(NESTED_OBJECTS_TARGET)
