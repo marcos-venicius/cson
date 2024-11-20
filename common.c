@@ -4,6 +4,8 @@ const char* tk_kind_display(const Cson_Token_Kind kind) {
     switch (kind) {
         case LBRACE_CSON_TOKEN: return "LBRACE";
         case RBRACE_CSON_TOKEN: return "RBRACE";
+        case LSQUARE_CSON_TOKEN: return "LSQUARE";
+        case RSQUARE_CSON_TOKEN: return "RSQUARE";
         case COLON_CSON_TOKEN: return "COLON";
         case COMMA_CSON_TOKEN: return "COMMA";
         case KEY_CSON_TOKEN: return "KEY";

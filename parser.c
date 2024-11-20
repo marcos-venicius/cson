@@ -3,15 +3,57 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include "./include/parser.h"
 #include "./include/common.h"
+#include "./include/parser.h"
 #include "include/lexer.h"
 
-char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
-    int join_string_size = 1;
+char* pop_nested_key(char* key) {
+    int cursor = (int)strlen(key) - 1;
 
-    if (obj_one_key_size == 0) {
-        join_string_size = 0;
+    while (cursor > 0 && key[cursor] != '.' && key[cursor] != ']') {
+        cursor--;
+    }
+
+    if (cursor == 0) {
+        return "";
+    }
+
+    if (key[cursor] == ']') {
+        while (cursor > 0 && key[cursor] != '.') {
+            cursor--;
+        }
+    }
+
+    if (cursor == 0) {
+        return "";
+    }
+
+    cursor++;
+
+    char* new_key = malloc(cursor * sizeof(char));
+    
+    if (new_key == NULL) {
+        fprintf(stderr, "could not allocate memory to the pop nested key new_key\n");
+        exit(1);
+    }
+
+    snprintf(new_key, cursor, "%s", key); 
+
+    free(key);
+
+    return new_key;
+}
+
+char* nested_key(
+    const char* obj_one_key,
+    const size_t obj_one_key_size,
+    const char* separator,
+    char* obj_two_key,
+    const int obj_two_key_size) {
+    int join_string_size = 0;
+
+    if (obj_one_key_size > 0) {
+        join_string_size = (int)strlen(separator);
     }
 
     const int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size + 1;
@@ -21,10 +63,14 @@ char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, 
     if (obj_one_key_size == 0) {
         snprintf(result, final_size, "%s", obj_two_key);
     } else {
-        snprintf(result, final_size, "%s.%s", obj_one_key, obj_two_key);
+        snprintf(result, final_size, "%s%s%s", obj_one_key, separator, obj_two_key);
     }
 
     return result;
+}
+
+char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
+    return nested_key(obj_one_key, obj_one_key_size, ".", obj_two_key, obj_two_key_size);
 }
 
 void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
@@ -95,12 +141,28 @@ bool is(const Cson_Token* token, ...) {
     return false;
 }
 
-int parse_json(Parser* parser, const char* prefix) {
+int parse_array(Parser* parser, char* prefix, int array_index) {
+    Cson_Token* next = next_token(parser);
+
+    printf("prefix: %s, kind: %s, value: %.*s\n", prefix, tk_kind_display(next->kind), next->value_len, next->value);
+
+    /* if (!is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) { */
+
+    return 0;
+}
+
+int parse_json(Parser* parser, char* prefix) {
     const Cson_Token* left = next_token(parser);
 
+    // TODO: add rsquare
     if (is(left, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN, -1)) {
-        next_token(parser);
-        return 0;
+        char* key = pop_nested_key(prefix);
+
+        return parse_json(parser, key);
+    }
+
+    if (is(left, COMMA_CSON_TOKEN, -1)) {
+        return parse_json(parser, prefix);
     }
 
     if (!is(left, KEY_CSON_TOKEN, -1)) {
@@ -118,9 +180,15 @@ int parse_json(Parser* parser, const char* prefix) {
     const Cson_Token* right = next_token(parser);
 
     if (is(right, LBRACE_CSON_TOKEN, -1)) {
-        const char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
+        char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
 
         return parse_json(parser, key);
+    }
+
+    if (is(right, LSQUARE_CSON_TOKEN, -1)) {
+        char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
+
+        return parse_array(parser, key, 0);
     }
 
     if (!is(right, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
@@ -149,8 +217,6 @@ int parse_json(Parser* parser, const char* prefix) {
     pair->value = value;
 
     pair->kind = right->kind;
-
-    next_token(parser);
 
 #if DEBUG
         printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
