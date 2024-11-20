@@ -185,6 +185,8 @@ void tokenize(Cson_Lexer* lexer_cson) {
         switch (c) {
             case '{': save_token_advance(lexer_cson, LBRACE_CSON_TOKEN); break;
             case '}': save_token_advance(lexer_cson, RBRACE_CSON_TOKEN); break;
+            case '[': save_token_advance(lexer_cson, LSQUARE_CSON_TOKEN); break;
+            case ']': save_token_advance(lexer_cson, RSQUARE_CSON_TOKEN); break;
             case ':': save_token_advance(lexer_cson, COLON_CSON_TOKEN); break;
             case ',': save_token_advance(lexer_cson, COMMA_CSON_TOKEN); break;
             case '0': case '1': case '2':

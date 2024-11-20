@@ -1,6 +1,6 @@
 CXX = gcc
 CXXFLAGS = -Wall -Wextra
-DEBUG_FLAGS = -g -DDEBUG -fsanitize=address
+DEBUG_FLAGS = -g -DDEBUG
 
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
@@ -8,6 +8,10 @@ TARGET = cson
 
 ifeq ($(DEBUG), 1)
 	CXXFLAGS += $(DEBUG_FLAGS)
+endif
+
+ifeq ($(SANITIZE), 1)
+	CXXFLAGS += -fsanitize=address
 endif
 
 all: $(TARGET)

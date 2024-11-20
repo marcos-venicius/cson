@@ -7,6 +7,8 @@ typedef enum {
 	// special chars
 	LBRACE_CSON_TOKEN = 0, // this is required to be able to know the amount of tokens we have just by seeing the EOF_CSON_TOKEN
 	RBRACE_CSON_TOKEN,
+	LSQUARE_CSON_TOKEN,
+	RSQUARE_CSON_TOKEN,
 	COLON_CSON_TOKEN,
 	COMMA_CSON_TOKEN,
 

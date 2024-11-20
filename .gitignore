@@ -1,3 +1,4 @@
 *.o
 cson
 .idea
+debug
