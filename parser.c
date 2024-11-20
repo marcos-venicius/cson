@@ -7,6 +7,8 @@
 #include "./include/parser.h"
 #include "include/lexer.h"
 
+int parse_json(Parser* parser, char* prefix);
+
 char* pop_nested_key(char* key) {
     int cursor = (int)strlen(key) - 1;
 
@@ -71,6 +73,16 @@ char* nested_key(
 
 char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
     return nested_key(obj_one_key, obj_one_key_size, ".", obj_two_key, obj_two_key_size);
+}
+
+char* nested_array_key(int index, const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
+    // TODO: I don't think we will have arrays with postions greater than 8 digits
+    // but, it should be improve, maybe
+    char key[12];
+
+    sprintf(key, ".[%d].", index);
+
+    return nested_key(obj_one_key, obj_one_key_size, key, obj_two_key, obj_two_key_size);
 }
 
 void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
@@ -141,11 +153,14 @@ bool is(const Cson_Token* token, ...) {
     return false;
 }
 
-int parse_array(Parser* parser, char* prefix, int array_index) {
+int parse_array(Parser* parser, char* prefix) {
     Cson_Token* next = next_token(parser);
 
     printf("prefix: %s, kind: %s, value: %.*s\n", prefix, tk_kind_display(next->kind), next->value_len, next->value);
 
+    char* key = nested_array_key(0, prefix, strlen(prefix), "any", 3);
+
+    printf("array key: %s\n", key);
     /* if (!is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) { */
 
     return 0;
@@ -186,9 +201,11 @@ int parse_json(Parser* parser, char* prefix) {
     }
 
     if (is(right, LSQUARE_CSON_TOKEN, -1)) {
+        next_token(parser);
+
         char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
 
-        return parse_array(parser, key, 0);
+        return parse_array(parser, key);
     }
 
     if (!is(right, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
