@@ -165,6 +165,11 @@ int cson_read_bool(const Cson* cson, const char* key, bool* output) {
     return NOT_FOUND_RETURN;
 }
 
+void cson_free(Cson *cson) {
+    free(cson->parser);
+    free(cson);
+}
+
 char* error_explain(const int code) {
     switch (code) {
         case NOT_FOUND_RETURN:

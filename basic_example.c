@@ -60,8 +60,7 @@ int main() {
 
     printf("falseField: %d\n", falseField);
 
-    parser_cleanup(cson->parser);
-    free(cson);
+    cson_free(cson);
 
     return 0;
 }

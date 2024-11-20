@@ -321,7 +321,3 @@ Parser* parse(Cson_Lexer* lexer_cson) {
 
     return parser;
 }
-
-void parser_cleanup(Parser* parser) {
-    free(parser);
-}

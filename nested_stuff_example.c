@@ -20,8 +20,7 @@ int main() {
 
     printf("one: %s\n", one);
 
-    parser_cleanup(cson->parser);
-    free(cson);
+    cson_free(cson);
 
     return 0;
 }

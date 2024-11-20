@@ -16,6 +16,5 @@ typedef struct {
 } Parser;
 
 Parser* parse(Cson_Lexer* cson);
-void parser_cleanup(Parser* parser);
 
 #endif // CSON_PARSE_H_

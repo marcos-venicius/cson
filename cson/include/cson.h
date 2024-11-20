@@ -18,5 +18,6 @@ char* error_explain(int code);
 int cson_read_string(const Cson* cson, const char* key, char** output);
 int cson_read_double(const Cson* cson, const char* key, double* output);
 int cson_read_bool(const Cson* cson, const char* key, bool* output);
+void cson_free(Cson* cson);
 
 #endif // CSON_H_

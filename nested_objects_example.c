@@ -28,9 +28,7 @@ int main() {
 
     printf("two: %s\n", two);
 
-
-    parser_cleanup(cson->parser);
-    free(cson);
+    cson_free(cson);
 
     return 0;
 }
