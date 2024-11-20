@@ -1,43 +1,8 @@
 {
-  "url": "https://github.com/marcos-venicius/cson",
-  "lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
-  "pi": 3.1415,
-  "active": true,
-  "inner": {
-    "second_url": "https://github.com/marcos-venicius/cson testinsl sdflkj sdf",
-    "second_lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
-    "second_pi": 3.1415,
-    "second_active": true,
-    "nested": {
-      "key": "value of the inner.nested.key"
-    }
-  },
-  "abacate": {
-    "second_url": "https://github.com/marcos-venicius/cson testinsl sdflkj sdf",
-    "second_lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
-    "second_pi": 3.1415,
-    "second_active": true,
-    "cocooco": {
-      "key": "o coco de abacate"
-    }
-  },
-  "root array": [
-    1,
-    "hey",
-    true,
-    false,
-    null,
-    {
-        "second_url": "https://github.com/marcos-venicius/cson testinsl sdflkj sdf",
-        "second_lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
-        "second_pi": 3.1415,
-        "second_active": true,
-        "testing": {
-            "second_url": "https://github.com/marcos-venicius/cson testinsl sdflkj sdf",
-            "second_lorem ipsum": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id nulla sed dui ultricies facilisis vel quis odio. Maecenas consectetur neque tellus, ut accumsan turpis fermentum nec.",
-            "second_pi": 3.1415,
-            "second_active": true
-        }
-    }
-  ]
+    "string": "https://github.com/marcos-venicius/cson",
+    "integer": 10,
+    "float": 10.100,
+    "null": null,
+    "true": true,
+    "false": false,
 }
