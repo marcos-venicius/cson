@@ -9,6 +9,13 @@
 
 int parse_json(Parser* parser, char* prefix);
 
+void add_pair(Parser* parser, KeyPair* pair) {
+    parser->pairs[parser->size] = *pair;
+    parser->size++;
+    
+    free(pair);
+}
+
 char* pop_nested_key(char* key) {
     int cursor = (int)strlen(key) - 1;
 
@@ -64,6 +71,8 @@ char* nested_key(
 
     if (obj_one_key_size == 0) {
         snprintf(result, final_size, "%s", obj_two_key);
+    } else if (obj_two_key_size == 0) {
+        snprintf(result, final_size, "%s%s", obj_one_key, separator);
     } else {
         snprintf(result, final_size, "%s%s%s", obj_one_key, separator, obj_two_key);
     }
@@ -80,7 +89,11 @@ char* nested_array_key(int index, const char* obj_one_key, const size_t obj_one_
     // but, it should be improve, maybe
     char key[12];
 
-    sprintf(key, ".[%d].", index);
+    if (obj_one_key_size == 0) {
+        sprintf(key, ".[%d]", index);
+    } else {
+        sprintf(key, ".[%d].", index);
+    }
 
     return nested_key(obj_one_key, obj_one_key_size, key, obj_two_key, obj_two_key_size);
 }
@@ -154,14 +167,36 @@ bool is(const Cson_Token* token, ...) {
 }
 
 int parse_array(Parser* parser, char* prefix) {
+    int opening_square_brackets = 1;
+    int current_array_index = 0;
+
     Cson_Token* next = next_token(parser);
 
-    printf("prefix: %s, kind: %s, value: %.*s\n", prefix, tk_kind_display(next->kind), next->value_len, next->value);
+    while (opening_square_brackets > 0) {
+        if (is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
+            KeyPair* pair = malloc(sizeof(KeyPair));
 
-    char* key = nested_array_key(0, prefix, strlen(prefix), "any", 3);
+            char* key = nested_array_key(current_array_index, prefix, strlen(prefix), NULL, 0);
+            char* value = malloc(next->value_len + 1);
 
-    printf("array key: %s\n", key);
-    /* if (!is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) { */
+            snprintf(value, next->value_len + 1, "%s", next->value);
+
+            pair->key = key;
+            pair->key_len = (int)strlen(key);
+
+            pair->value = value;
+
+            pair->kind = next->kind;
+
+            add_pair(parser, pair);
+        } else if (is(next, COMMA_CSON_TOKEN, -1)) {
+            current_array_index++;
+        } else if (is(next, RSQUARE_CSON_TOKEN, -1)) {
+            opening_square_brackets--;
+        }
+
+        next = next_token(parser);
+    }
 
     return 0;
 }
@@ -201,8 +236,6 @@ int parse_json(Parser* parser, char* prefix) {
     }
 
     if (is(right, LSQUARE_CSON_TOKEN, -1)) {
-        next_token(parser);
-
         char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
 
         return parse_array(parser, key);
@@ -239,10 +272,7 @@ int parse_json(Parser* parser, char* prefix) {
         printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
 #endif
 
-    parser->pairs[parser->size] = *pair;
-    parser->size++;
-
-    free(pair);
+    add_pair(parser, pair);
 
     if (parser->root->kind == EOF_CSON_TOKEN) return 0;
 
