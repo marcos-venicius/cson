@@ -44,11 +44,10 @@ $ ./nested_stuff
 
 ## Next improvements
 
-- [ ] Handle escape strings
-- [ ] Possible bugs
-    - [ ] Add tests to the parser to check if it's working well
-- [ ] Better error reporting
-- [ ] Objects key naming conflicts with the internal way of storing the path until the object
+- Possible bugs
+    - Add tests to the parser to check if it's working well
+- Better error reporting
+- Objects key naming conflicts with the internal way of storing the path until the object
 
 For instance:
 

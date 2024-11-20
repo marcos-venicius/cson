@@ -17,6 +17,78 @@ void add_pair(Parser* parser, KeyPair* pair) {
     free(pair);
 }
 
+
+char* unescape_sequence(char* string) {
+    int len = (int)strlen(string);
+    int string_i = 0;
+    int scape_i = 0;
+    char* unescaped = malloc(len * sizeof(char));
+
+    while (string_i < len) {
+        if (string[string_i] == '\\') {
+            switch (string[string_i + 1]) {
+                case '"':
+                    unescaped[scape_i] = '"';
+                    break;
+                case '\\':
+                    unescaped[scape_i] = '\\';
+                    break;
+                case 'n':
+                    unescaped[scape_i] = '\n';
+                    break;
+                case 't':
+                    unescaped[scape_i] = '\t';
+                    break;
+                case 'b':
+                    unescaped[scape_i] = '\t';
+                    break;
+                case 'r':
+                    unescaped[scape_i] = '\r';
+                    break;
+                case 'f':
+                    unescaped[scape_i] = '\f';
+                    break;
+                default:
+                    fprintf(stderr, "invalid espace string \"%c%c\"\n", string[string_i], string[string_i + 1]);
+                    exit(1);
+            }
+            string_i++;
+        } else {
+            unescaped[scape_i] = string[string_i];
+        }
+
+        string_i++;
+        scape_i++;
+    }
+
+    free(string);
+
+    return unescaped;
+}
+
+KeyPair* new_pair(char* key, char* value, Cson_Token_Kind kind) {
+    KeyPair* pair = malloc(sizeof(KeyPair));
+
+    if (pair == NULL) {
+        fprintf(stderr, "could not allocate memory for key/pair");
+
+        exit(1);
+    }
+
+    pair->key = key;
+    pair->key_len = (int)strlen(key);
+
+    if (kind == STRING_CSON_TOKEN) {
+        pair->value = unescape_sequence(value);
+    } else {
+        pair->value = value;
+    }
+
+    pair->kind = kind;
+
+    return pair;
+}
+
 char* pop_nested_key(char* key) {
     int cursor = (int)strlen(key) - 1;
 
@@ -230,26 +302,13 @@ void parse_object(Parser* parser, char* prefix) {
             exit(1);
         }
 
-        KeyPair* pair = malloc(sizeof(KeyPair));
-
-        if (pair == NULL) {
-            fprintf(stderr, "could not allocate memory for key/pair");
-
-            exit(1);
-        }
-
         const size_t prefix_len = strlen(prefix);
         char* key = nested_object_key(prefix, prefix_len, left->value, left->value_len);
         char* value = malloc(right->value_len + 1);
 
         snprintf(value, right->value_len + 1, "%s", right->value);
 
-        pair->key = key;
-        pair->key_len = (int)strlen(key);
-
-        pair->value = value;
-
-        pair->kind = right->kind;
+        KeyPair* pair = new_pair(key, value, right->kind);
 
         add_pair(parser, pair);
     }
@@ -262,19 +321,12 @@ void parse_array(Parser* parser, char* prefix) {
         Cson_Token* next = next_token(parser);
 
         if (is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
-            KeyPair* pair = malloc(sizeof(KeyPair));
-
             char* key = nested_array_key(current_array_index, prefix, strlen(prefix), NULL, 0);
             char* value = malloc(next->value_len + 1);
 
             snprintf(value, next->value_len + 1, "%s", next->value);
 
-            pair->key = key;
-            pair->key_len = (int)strlen(key);
-
-            pair->value = value;
-
-            pair->kind = next->kind;
+            KeyPair* pair = new_pair(key, value, next->kind);
 
             add_pair(parser, pair);
         } else if (is(next, COMMA_CSON_TOKEN, -1)) {

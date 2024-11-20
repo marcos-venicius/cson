@@ -109,6 +109,23 @@ void save_string(Cson_Lexer* lexer_cson) {
     next(lexer_cson, 1);
 
     while (chr(lexer_cson) != '"') {
+        if (chr(lexer_cson) == '\\')  {
+            switch (nchr(lexer_cson)) {
+                case '"':
+                case '\\':
+                case 'n':
+                case 't':
+                case 'b':
+                case 'r':
+                case 'f':
+                    next(lexer_cson, 1);
+                    break;
+                default:
+                    fprintf(stderr, "invalid espace string \"%c\"\n", nchr(lexer_cson));
+                    exit(1);
+            }
+        }
+
         next(lexer_cson, 1);
     }
 

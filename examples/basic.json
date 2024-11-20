@@ -1,5 +1,5 @@
 {
-    "string": "https://github.com/marcos-venicius/cson",
+    "string": "\"https://github.com\t/marcos-\\n\nvenicius/cson\"",
     "integer": 10,
     "float": 10.100,
     "null": null,
