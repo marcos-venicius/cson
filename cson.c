@@ -73,7 +73,7 @@ Cson* cson_load(const char* filepath) {
     for (int i = 0; i < parser->size; i++) {
         const KeyPair pair = parser->pairs[i];
 
-        printf("%.*s = %s\n", pair.key_len, pair.key, pair.value);
+        printf("'%.*s' = %s\n", pair.key_len, pair.key, pair.value);
     }
 #endif
 
@@ -87,6 +87,10 @@ bool is_kind(const KeyPair* pair, const Cson_Token_Kind kind) {
 }
 
 bool match_keys(const KeyPair* pair, const char* key) {
+#ifdef DEBUG
+    printf("matching keys: '%.*s' == '%s' and %d == %d\n", pair->key_len, pair->key, key, (int)strlen(key), pair->key_len);
+#endif
+
     return (int)strlen(key) == pair->key_len && strncmp(pair->key, key, pair->key_len) == 0;
 }
 

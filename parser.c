@@ -7,7 +7,8 @@
 #include "./include/parser.h"
 #include "include/lexer.h"
 
-int parse_json(Parser* parser, char* prefix);
+void parse_array(Parser* parser, char* prefix);
+void parse_object(Parser* parser, char* prefix);
 
 void add_pair(Parser* parser, KeyPair* pair) {
     parser->pairs[parser->size] = *pair;
@@ -59,17 +60,19 @@ char* nested_key(
     const char* separator,
     char* obj_two_key,
     const int obj_two_key_size) {
-    int join_string_size = 0;
+    const int join_string_size = (int)strlen(separator);
 
-    if (obj_one_key_size > 0) {
-        join_string_size = (int)strlen(separator);
+    int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size;
+
+    if (obj_one_key_size != 0) {
+        final_size++;
     }
-
-    const int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size + 1;
 
     char* result = malloc(final_size * sizeof(char));
 
-    if (obj_one_key_size == 0) {
+    if (obj_one_key_size == 0 && obj_two_key_size == 0) {
+        snprintf(result, final_size, "%s", separator);
+    } else if (obj_one_key_size == 0) {
         snprintf(result, final_size, "%s", obj_two_key);
     } else if (obj_two_key_size == 0) {
         snprintf(result, final_size, "%s%s", obj_one_key, separator);
@@ -89,7 +92,11 @@ char* nested_array_key(int index, const char* obj_one_key, const size_t obj_one_
     // but, it should be improve, maybe
     char key[12];
 
-    if (obj_one_key_size == 0) {
+    if (obj_one_key_size == 0 && obj_two_key_size == 0) {
+        sprintf(key, "[%d]", index);
+    } else if (obj_one_key_size == 0) {
+        sprintf(key, "[%d]", index);
+    } else if (obj_two_key_size == 0) {
         sprintf(key, ".[%d]", index);
     } else {
         sprintf(key, ".[%d].", index);
@@ -166,13 +173,85 @@ bool is(const Cson_Token* token, ...) {
     return false;
 }
 
-int parse_array(Parser* parser, char* prefix) {
-    int opening_square_brackets = 1;
+void parse_object(Parser* parser, char* prefix) {
+    while (true) {
+        Cson_Token* left = next_token(parser);
+
+        if (is(left, RBRACE_CSON_TOKEN, -1)) {
+            break;
+        }
+
+        if (is(left, COMMA_CSON_TOKEN, -1)) {
+            continue;
+        }
+
+        if (!is(left, KEY_CSON_TOKEN, -1)) {
+            fprintf(stderr, "1 unexpected token of type %s\n", tk_kind_display(left->kind));
+
+            exit(1);
+        }
+
+        Cson_Token* middle = next_token(parser);
+
+        if (!is(middle, COLON_CSON_TOKEN, -1)) {
+            fprintf(stderr, "2 unexpected token of type %s\n", tk_kind_display(middle->kind));
+
+            exit(1);
+        }
+
+        Cson_Token* right = next_token(parser);
+
+        if (is(right, LBRACE_CSON_TOKEN, -1)) {
+            char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
+
+            parse_object(parser, key);
+            continue;
+        }
+
+        if (is(right, LSQUARE_CSON_TOKEN, -1)) {
+            char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
+
+            parse_array(parser, key);
+            continue;
+        }
+        
+        if (!is(right, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
+            fprintf(stderr, "3 unexpected token of type %s\n", tk_kind_display(right->kind));
+
+            exit(1);
+        }
+
+        KeyPair* pair = malloc(sizeof(KeyPair));
+
+        if (pair == NULL) {
+            fprintf(stderr, "could not allocate memory for key/pair");
+
+            exit(1);
+        }
+
+        const size_t prefix_len = strlen(prefix);
+        char* key = nested_object_key(prefix, prefix_len, left->value, left->value_len);
+        char* value = malloc(right->value_len + 1);
+
+        snprintf(value, right->value_len + 1, "%s", right->value);
+
+        pair->key = key;
+        pair->key_len = (int)strlen(key);
+
+        pair->value = value;
+
+        pair->kind = right->kind;
+
+        add_pair(parser, pair);
+    }
+}
+
+void parse_array(Parser* parser, char* prefix) {
     int current_array_index = 0;
 
-    Cson_Token* next = next_token(parser);
+    while (true) {
+        Cson_Token* next = next_token(parser);
 
-    while (opening_square_brackets > 0) {
         if (is(next, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
             KeyPair* pair = malloc(sizeof(KeyPair));
 
@@ -192,121 +271,40 @@ int parse_array(Parser* parser, char* prefix) {
         } else if (is(next, COMMA_CSON_TOKEN, -1)) {
             current_array_index++;
         } else if (is(next, RSQUARE_CSON_TOKEN, -1)) {
-            opening_square_brackets--;
+            break;
+        } else if (is(next, LBRACE_CSON_TOKEN, -1)) {
+            char* key = nested_array_key(current_array_index, prefix, strlen(prefix), NULL, 0);
+            parse_object(parser, key);
         }
-
-        next = next_token(parser);
     }
-
-    return 0;
-}
-
-int parse_json(Parser* parser, char* prefix) {
-    const Cson_Token* left = next_token(parser);
-
-    // TODO: add rsquare
-    if (is(left, RBRACE_CSON_TOKEN, EOF_CSON_TOKEN, -1)) {
-        char* key = pop_nested_key(prefix);
-
-        return parse_json(parser, key);
-    }
-
-    if (is(left, COMMA_CSON_TOKEN, -1)) {
-        return parse_json(parser, prefix);
-    }
-
-    if (!is(left, KEY_CSON_TOKEN, -1)) {
-        unexpected_token_error(left, KEY_CSON_TOKEN);
-        return -1;
-    }
-
-    const Cson_Token* middle = next_token(parser);
-
-    if (!is(middle, COLON_CSON_TOKEN, -1)) {
-        unexpected_token_error(middle, COLON_CSON_TOKEN);
-        return -1;
-    }
-
-    const Cson_Token* right = next_token(parser);
-
-    if (is(right, LBRACE_CSON_TOKEN, -1)) {
-        char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
-
-        return parse_json(parser, key);
-    }
-
-    if (is(right, LSQUARE_CSON_TOKEN, -1)) {
-        char* key = nested_object_key(prefix, strlen(prefix), left->value, left->value_len);
-
-        return parse_array(parser, key);
-    }
-
-    if (!is(right, STRING_CSON_TOKEN, NUMBER_CSON_TOKEN, NULL_CSON_TOKEN, FALSE_CSON_TOKEN, TRUE_CSON_TOKEN, -1)) {
-        unexpected_token_error(right, STRING_CSON_TOKEN);
-        return -1;
-    }
-
-    KeyPair* pair = malloc(sizeof(KeyPair));
-
-    if (pair == NULL) {
-        fprintf(stderr, "could not allocate memory for key/pair");
-
-        return -1;
-    }
-
-    const size_t prefix_len = strlen(prefix);
-
-    char* key = nested_object_key(prefix, prefix_len, left->value, left->value_len);
-    char* value = malloc(right->value_len + 1);
-
-    snprintf(value, right->value_len + 1, "%s", right->value);
-
-    pair->key = key;
-    pair->key_len = (int)strlen(key);
-
-    pair->value = value;
-
-    pair->kind = right->kind;
-
-#if DEBUG
-        printf("%s %.*s %s\n", tk_kind_display(pair->kind), pair->key_len, pair->key, pair->value);
-#endif
-
-    add_pair(parser, pair);
-
-    if (parser->root->kind == EOF_CSON_TOKEN) return 0;
-
-    return parse_json(parser, prefix);
 }
 
 Parser* parse(Cson_Lexer* lexer_cson) {
-#if DEBUG
-    printf("\n\nParsing:\n\n");
-#endif
-
     Parser* parser = init_parser(lexer_cson);
 
     if (parser == NULL) {
-        return NULL;
-    }
-
-    const Cson_Token* current = lexer_cson->root;
-
-    if (is(current, EOF_CSON_TOKEN, -1)) {
-        return parser;
-    }
-
-    if (!is(current, LBRACE_CSON_TOKEN, -1)) {
-        unexpected_token_error(current, LBRACE_CSON_TOKEN);
-        return NULL;
-    }
-
-    if (is(current, RBRACE_CSON_TOKEN, -1)) {
-        return parser;
-    }
-
-    if (parse_json(parser, "") == -1) {
+        fprintf(stderr, "could not initialize the parser");
         exit(1);
+    }
+
+    bool parsing = true;
+
+    while (parser->root->kind != EOF_CSON_TOKEN && parsing) {
+        switch (parser->root->kind) {
+            case LBRACE_CSON_TOKEN:
+                parse_object(parser, "");
+                break;
+            case LSQUARE_CSON_TOKEN:
+                parse_array(parser, "");
+                break;
+            case RBRACE_CSON_TOKEN:
+            case RSQUARE_CSON_TOKEN:
+                parsing = false;
+                break;
+            default:
+                fprintf(stderr, "unhandled token kind %s\n", tk_kind_display(parser->root->kind));
+                exit(1);
+        }
     }
 
     return parser;
