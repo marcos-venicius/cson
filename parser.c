@@ -54,12 +54,9 @@ char* pop_nested_key(char* key) {
     return new_key;
 }
 
-char* nested_key(
-    const char* obj_one_key,
-    const size_t obj_one_key_size,
-    const char* separator,
-    char* obj_two_key,
-    const int obj_two_key_size) {
+char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
+    char* separator = ".";
+
     const int join_string_size = (int)strlen(separator);
 
     int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size;
@@ -83,10 +80,6 @@ char* nested_key(
     return result;
 }
 
-char* nested_object_key(const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
-    return nested_key(obj_one_key, obj_one_key_size, ".", obj_two_key, obj_two_key_size);
-}
-
 char* nested_array_key(int index, const char* obj_one_key, const size_t obj_one_key_size, char* obj_two_key, const int obj_two_key_size) {
     // TODO: I don't think we will have arrays with postions greater than 8 digits
     // but, it should be improve, maybe
@@ -102,7 +95,23 @@ char* nested_array_key(int index, const char* obj_one_key, const size_t obj_one_
         sprintf(key, ".[%d].", index);
     }
 
-    return nested_key(obj_one_key, obj_one_key_size, key, obj_two_key, obj_two_key_size);
+    const int join_string_size = (int)strlen(key) + 1;
+
+    int final_size = (int)obj_one_key_size + join_string_size + obj_two_key_size;
+
+    char* result = malloc(final_size * sizeof(char));
+
+    if (obj_one_key_size == 0 && obj_two_key_size == 0) {
+        snprintf(result, final_size, "%s", key);
+    } else if (obj_one_key_size == 0) {
+        snprintf(result, final_size, "%s", obj_two_key);
+    } else if (obj_two_key_size == 0) {
+        snprintf(result, final_size, "%s%s", obj_one_key, key);
+    } else {
+        snprintf(result, final_size, "%s%s%s", obj_one_key, key, obj_two_key);
+    }
+
+    return result;
 }
 
 void unexpected_token_error(const Cson_Token* token, const Cson_Token_Kind kind) {
@@ -275,6 +284,9 @@ void parse_array(Parser* parser, char* prefix) {
         } else if (is(next, LBRACE_CSON_TOKEN, -1)) {
             char* key = nested_array_key(current_array_index, prefix, strlen(prefix), NULL, 0);
             parse_object(parser, key);
+        } else if (is(next, LSQUARE_CSON_TOKEN, -1)) {
+            char* key = nested_array_key(current_array_index, prefix, strlen(prefix), NULL, 0);
+            parse_array(parser, key);
         }
     }
 }
