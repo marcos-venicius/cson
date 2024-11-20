@@ -2,6 +2,9 @@
 
 _A simple and stupid JSON decoder in C_
 
+![image](https://github.com/user-attachments/assets/b01b8aff-bc7b-4d1d-afe1-a3c922db81ca)
+
+
 ## Testing
 
 **We have some examples to you:**
