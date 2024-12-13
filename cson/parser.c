@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include <assert.h>
 #include "./include/common.h"
 #include "./include/parser.h"
@@ -17,12 +18,11 @@ void add_pair(Parser* parser, KeyPair* pair) {
     free(pair);
 }
 
-
 char* unescape_sequence(char* string) {
     int len = (int)strlen(string);
     int string_i = 0;
     int scape_i = 0;
-    char* unescaped = malloc(len * sizeof(char));
+    char* unescaped = calloc(sizeof(char), len);
 
     while (string_i < len) {
         if (string[string_i] == '\\') {
@@ -78,10 +78,40 @@ KeyPair* new_pair(char* key, char* value, Cson_Token_Kind kind) {
     pair->key = key;
     pair->key_len = (int)strlen(key);
 
-    if (kind == STRING_CSON_TOKEN) {
-        pair->value = unescape_sequence(value);
-    } else {
-        pair->value = value;
+    switch (kind) {
+        case STRING_CSON_TOKEN: {
+            pair->as.string = unescape_sequence(value);
+            break;
+        }
+        case NUMBER_CSON_TOKEN: {
+            char* endptr;
+
+            pair->as.number = strtod(value, &endptr);
+
+            if (endptr == value || *endptr != '\0') {
+                // TODO: better error reporting
+                fprintf(stderr, "could not parse %s as a number: %s\n", value, strerror(errno));
+                exit(1);
+            }
+
+            break;
+        }
+        case TRUE_CSON_TOKEN: {
+            pair->as.boolean = true;
+
+            break;
+        }
+        case FALSE_CSON_TOKEN: {
+            pair->as.boolean = false;
+
+            break;
+        }
+        case NULL_CSON_TOKEN:
+            break;
+        default:
+            fprintf(stderr, "unrecognized token %s\n", value);
+            exit(1);
+            break;
     }
 
     pair->kind = kind;

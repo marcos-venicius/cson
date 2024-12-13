@@ -107,7 +107,7 @@ int cson_read_string(const Cson* cson, const char* key, char** output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            *output = pair.value;
+            *output = pair.as.string;
 
             return OK_RETURN;
         }
@@ -129,12 +129,7 @@ int cson_read_double(const Cson* cson, const char* key, double* output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            char* result = pair.value;
-            char* endptr;
-
-            *output = strtod(result, &endptr);
-
-            free(result);
+            *output = pair.as.number;
 
             return OK_RETURN;
         }
@@ -156,7 +151,7 @@ int cson_read_bool(const Cson* cson, const char* key, bool* output) {
                 return INVALID_TYPE_RETURN;
             }
 
-            *output = pair.kind == TRUE_CSON_TOKEN;
+            *output = pair.as.boolean;
 
             return OK_RETURN;
         }

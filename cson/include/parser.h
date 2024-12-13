@@ -2,11 +2,18 @@
 #define CSON_PARSE_H_
 #include "./lexer.h"
 
+typedef union {
+  double number;
+  bool boolean;
+  char* string;
+} KeyPairValue;
+
 typedef struct {
   Cson_Token_Kind kind;
   char* key;
   int key_len;
-  char* value;
+
+  KeyPairValue as;
 } KeyPair;
 
 typedef struct {
