@@ -39,4 +39,5 @@ int main() {
     syntax_tree_parse(st);
 
     cson_lexer_free(lexer);
+    syntax_tree_free(st);
 }

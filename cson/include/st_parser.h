@@ -42,59 +42,7 @@ struct SyntaxTree {
 SyntaxTree *parse_syntax_tree(Cson_Lexer *cson);
 SyntaxTree *init_syntax_tree_parser(Cson_Lexer *lexer);
 void syntax_tree_parse(SyntaxTree *st);
+void syntax_tree_free(SyntaxTree *st);
 
 #endif
 
-/**
-
-SyntaxTree {
-    root = SyntaxTreeNode {
-        kind = OBJECT,
-        value = SyntaxTreeNodeValue {
-            object = [
-                SyntaxTreeNode {
-                    name = "nome",
-                    kind = NUMBER,
-                    value = SyntaxTreeNodeValue {
-                        number = 1
-                    }
-                },
-                SyntaxTreeNode {
-                    name = "test",
-                    kind = ARRAY,
-                    value = SyntaxTreeNodeValue {
-                        array = [
-                            SyntaxTreeNode {
-                                kind = NUMBER,
-                                value = SyntaxTreeNodeValue {
-                                    number = 1
-                                }
-                            },
-                            SyntaxTreeNode {
-                                kind = NUMBER,
-                                value = SyntaxTreeNodeValue {
-                                    number = 2
-                                }
-                            },
-                            SyntaxTreeNode = {
-                                kind = OBJECT,
-                                value = SyntaxTreeNodeValue {
-                                    object = [
-                                        SyntaxTreeNode {
-                                            kind = NUMBER,
-                                            value = SyntaxTreeNodeValue {
-                                                number = 23
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
-    }
-}
-
-*/

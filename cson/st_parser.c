@@ -11,6 +11,7 @@
 SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size);
 SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size);
 
+// TODO: implement a useful free
 void free_syntax_tree_node(void *data) {
     SyntaxTreeNode *node = data;
 
@@ -60,7 +61,8 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
     SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_OBJECT;
-    node->value.object = ll_new(free_syntax_tree_node, NULL); // SyntaxTreeNode[]
+    // TODO: custom free?
+    node->value.object = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -81,7 +83,8 @@ SyntaxTreeNode *create_syntax_tree_node_array(char *name, size_t name_size) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
 
     node->kind = STNK_ARRAY;
-    node->value.array = ll_new(free_syntax_tree_node, NULL); // SyntaxTreeNode[]
+    // TODO: custom free?
+    node->value.array = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -158,6 +161,8 @@ SyntaxTreeNode *create_syntax_tree_node_number(char *name, size_t name_size, cha
 
     node->kind = STNK_NUMBER;
     node->value.number = strtod(null_terminated_data, &endptr);
+
+    free(null_terminated_data);
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -334,5 +339,56 @@ void syntax_tree_parse(SyntaxTree *st) {
             exit(1);
     }
 
+    st->root = node;
+
     stn_display(node, 0, NULL);
+}
+
+void syntax_tree_free_object(SyntaxTreeNode *object) {
+    if (object->name != NULL) {
+        free(object->name);
+    }
+
+    LLIter iter = ll_iter(object->value.object);
+
+    while (ll_iter_has(&iter)) {
+        LLIterItem item = ll_iter_consume(&iter);
+
+        SyntaxTreeNode *node = item.data;
+
+        if (node->name != NULL) free(node->name);
+
+        switch (node->kind) {
+            case STNK_BOOLEAN:
+            case STNK_NUMBER:
+                break;
+            case STNK_STRING:
+                if (node->value.string != NULL) free(node->value.string);
+                break;
+            case STNK_OBJECT:
+                syntax_tree_free_object(node);
+                break;
+            case STNK_ARRAY:
+                // TODO:
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+void syntax_tree_free(SyntaxTree *st) {
+    SyntaxTreeNode *current = st->root;
+
+    switch (current->kind) {
+        case STNK_OBJECT:
+            syntax_tree_free_object(current);
+            ll_free(current->value.object);
+            break;
+        default:
+            break;
+    }
+
+    free(current);
+    free(st);
 }

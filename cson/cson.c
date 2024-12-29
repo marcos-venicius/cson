@@ -70,11 +70,11 @@ Cson* cson_load(const char* filepath) {
     }
 
 #ifdef DEBUG
-    for (int i = 0; i < parser->size; i++) {
-        const KeyPair pair = parser->pairs[i];
+    // for (int i = 0; i < parser->size; i++) {
+    //     const KeyPair pair = parser->pairs[i];
 
-        printf("'%.*s' = %s\n", pair.key_len, pair.key, pair.value);
-    }
+    //     printf("'%.*s' = %s\n", pair.key_len, pair.key, pair.value);
+    // }
 #endif
 
     cson->parser = parser;
