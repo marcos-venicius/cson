@@ -66,7 +66,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             }
 
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
-            printf("%*svalue = SyntaxTreeNodeValue [\n", level + 4, "");
+            printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
 
             LLIter iter = ll_iter(node->value.object);
 
@@ -77,7 +77,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
                 stn_display(child, level + 8, NULL);
             }
 
-            printf("%*s]\n", level + 4, "");
+            printf("%*s}\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;
         }
