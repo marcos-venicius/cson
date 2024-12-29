@@ -4,6 +4,11 @@ _A simple and stupid JSON decoder in C_
 
 ![image](https://github.com/user-attachments/assets/b01b8aff-bc7b-4d1d-afe1-a3c922db81ca)
 
+## Implementing a new parser
+
+The new parser, parses the json a tree, making it easier to traver over the path specified by the user.
+
+![image](https://github.com/user-attachments/assets/de709f36-688f-40bd-b159-526011baf26b)
 
 ## Testing
 
