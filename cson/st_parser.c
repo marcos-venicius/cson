@@ -11,23 +11,6 @@
 SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size);
 SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size);
 
-// TODO: implement a useful free
-void free_syntax_tree_node(void *data) {
-    SyntaxTreeNode *node = data;
-
-    switch (node->kind) {
-        case STNK_ARRAY:
-            ll_free(node->value.array);
-            break;
-        case STNK_OBJECT:
-            ll_free(node->value.object);
-        default:
-            break;
-    }
-
-    free(node);
-}
-
 static Cson_Token *next_token(SyntaxTree *st) {
     if (st->token->kind == EOF_CSON_TOKEN) return NULL;
 
@@ -61,7 +44,6 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
     SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_OBJECT;
-    // TODO: custom free?
     node->value.object = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
@@ -83,7 +65,6 @@ SyntaxTreeNode *create_syntax_tree_node_array(char *name, size_t name_size) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
 
     node->kind = STNK_ARRAY;
-    // TODO: custom free?
     node->value.array = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
@@ -344,50 +325,67 @@ void syntax_tree_parse(SyntaxTree *st) {
     stn_display(node, 0, NULL);
 }
 
-void syntax_tree_free_object(SyntaxTreeNode *object) {
-    if (object->name != NULL) {
-        free(object->name);
+void syntax_tree_free_list(SyntaxTreeNode *list) {
+    if (list->name != NULL) {
+        free(list->name);
     }
 
-    LLIter iter = ll_iter(object->value.object);
+    LLIter iter;
+    
+    switch (list->kind) {
+        case STNK_ARRAY:
+            iter = ll_iter(list->value.array);
+            break;
+        case STNK_OBJECT:
+            iter = ll_iter(list->value.object);
+            break;
+        default:
+            fprintf(stderr, "Unexpected kind when freeing memory\n");
+            exit(1);
+    }
 
     while (ll_iter_has(&iter)) {
         LLIterItem item = ll_iter_consume(&iter);
 
         SyntaxTreeNode *node = item.data;
 
-        if (node->name != NULL) free(node->name);
-
         switch (node->kind) {
             case STNK_BOOLEAN:
+                if (node->name != NULL) free(node->name);
+                break;
             case STNK_NUMBER:
+                if (node->name != NULL) free(node->name);
                 break;
             case STNK_STRING:
+                if (node->name != NULL) free(node->name);
                 if (node->value.string != NULL) free(node->value.string);
                 break;
             case STNK_OBJECT:
-                syntax_tree_free_object(node);
-                break;
             case STNK_ARRAY:
-                // TODO:
+                syntax_tree_free_list(node);
                 break;
             default:
                 break;
         }
+    }   
+
+    switch (list->kind) {
+        case STNK_ARRAY:
+            ll_free(list->value.array);
+            break;
+        case STNK_OBJECT:
+            ll_free(list->value.object);
+            break;
+        default:
+            fprintf(stderr, "Unexpected kind when freeing memory\n");
+            exit(1);
     }
 }
 
 void syntax_tree_free(SyntaxTree *st) {
     SyntaxTreeNode *current = st->root;
 
-    switch (current->kind) {
-        case STNK_OBJECT:
-            syntax_tree_free_object(current);
-            ll_free(current->value.object);
-            break;
-        default:
-            break;
-    }
+    syntax_tree_free_list(current);
 
     free(current);
     free(st);
