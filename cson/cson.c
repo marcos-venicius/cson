@@ -73,15 +73,29 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
     CsonItem item = { .node = NULL };
     bool parsing = true;
 
+    if (strlen(format) % 2 != 0) {
+        item.return_code = CRC_INVALID_FORMAT;
+
+        return item;
+    }
+
     char *p;
 
     va_list ap;
     va_start(ap, format);
+    bool matchSymbol = true;
+
     for (p = format; *p && parsing; p++) {
         switch (*p) {
             case '%':
-                continue;
+                if (!matchSymbol) {
+                    item.return_code = CRC_INVALID_FORMAT;
+                    parsing = false;
+                }
+                matchSymbol = false;
+                break;
             case 's':
+                matchSymbol = true;
                 if (current->kind != STNK_OBJECT) {
                     item.node = NULL;
                     item.return_code = CRC_INVALID_TYPE;
@@ -115,6 +129,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
 
                 break;
             case 'd':
+                matchSymbol = true;
                 if (current->kind != STNK_ARRAY) {
                     item.node = NULL;
                     item.return_code = CRC_INVALID_TYPE;

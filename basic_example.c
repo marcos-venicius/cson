@@ -9,56 +9,49 @@ int main() {
         return 1;
     }
 
-    char* stringField;
-    char* nullField;
-    double integerField;
-    double floatField;
-    bool trueField;
-    bool falseField;
+    CsonItem result;
 
-    int result;
-
-    if ((result = cson_read_string(cson, "string", &stringField)) != OK_RETURN) {
-        fprintf(stderr, "stringField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "string")).return_code != CRC_OK) {
+        fprintf(stderr, "stringField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("stringField: %s\n", stringField);
+    printf("stringField: %s\n", result.node->value.string);
 
-    if ((result = cson_read_double(cson, "integer", &integerField)) != OK_RETURN) {
-        fprintf(stderr, "integerField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "integer")).return_code != CRC_OK) {
+        fprintf(stderr, "integerField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("integerField: %f\n", integerField);
+    printf("integerField: %f\n", result.node->value.number);
 
-    if ((result = cson_read_double(cson, "float", &floatField)) != OK_RETURN) {
-        fprintf(stderr, "floatField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "float")).return_code != CRC_OK) {
+        fprintf(stderr, "floatField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("floatField: %f\n", floatField);
+    printf("floatField: %f\n", result.node->value.number);
 
-    if ((result = cson_read_string(cson, "null", &nullField)) != OK_RETURN) {
-        fprintf(stderr, "nullField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "null")).return_code != CRC_OK) {
+        fprintf(stderr, "nullField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("nullField: %s\n", nullField);
+    printf("nullField: %s\n", result.node->value.string);
 
-    if ((result = cson_read_bool(cson, "true", &trueField)) != OK_RETURN) {
-        fprintf(stderr, "trueField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "true")).return_code != CRC_OK) {
+        fprintf(stderr, "trueField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("trueField: %d\n", trueField);
+    printf("trueField: %d\n", result.node->value.boolean);
 
-    if ((result = cson_read_bool(cson, "false", &falseField)) != OK_RETURN) {
-        fprintf(stderr, "falseField: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s", "false")).return_code != CRC_OK) {
+        fprintf(stderr, "falseField: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("falseField: %d\n", falseField);
+    printf("falseField: %d\n", result.node->value.boolean);
 
     cson_free(cson);
 
