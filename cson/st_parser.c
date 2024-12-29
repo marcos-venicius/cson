@@ -1,8 +1,6 @@
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "libs/assertf.h"
 #include "include/st_parser.h"
 #include "include/common.h"
 #include "include/lexer.h"
@@ -321,8 +319,6 @@ void syntax_tree_parse(SyntaxTree *st) {
     }
 
     st->root = node;
-
-    stn_display(node, 0, NULL);
 }
 
 void syntax_tree_free_list(SyntaxTreeNode *list) {

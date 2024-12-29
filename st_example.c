@@ -1,43 +1,21 @@
-#include "cson/include/io.h"
-#include "cson/include/st_parser.h"
+#include "cson/include/cson.h"
 #include <stdio.h>
-#include <stdlib.h>
 
 int main() {
-    char* content;
+    Cson *cson = cson_load("./examples/nested_stuff.json");
 
-    const unsigned long size = read_file_content("./examples/basic.json", &content);
+    CsonItem item = cson_get(cson->root, "%s%s%s%d", "one", "two", "three", 0);
 
-    if (size == 0) {
-        return 0;
+    if (item.return_code != CRC_OK) {
+        fprintf(stderr, "error: %s\n", return_code_as_cstr(item.return_code));
+    } else {
+        printf("value: %f\n", item.node->value.number);
     }
 
-    Cson_Lexer* lexer = malloc(sizeof(Cson_Lexer));
+    CsonItem objectThree = cson_get(cson->root, "%s%s%s", "one", "two", "three");
+    CsonItem message = cson_get(objectThree.node, "%d%s%s%d", 1, "test", "hello", 0);
 
-    if (lexer == NULL) {
-        free(content);
+    printf("message: %s\n", message.node->value.string);
 
-        perror("could not allocate memory to the lexer struct");
-
-        return 1;
-    }
-
-    lexer->content = content;
-    lexer->content_len = size;
-    lexer->tokens_len = 0;
-    lexer->bot = 0;
-    lexer->cursor = 0;
-    lexer->has_error = false;
-    lexer->root = NULL;
-    lexer->tail = NULL;
-
-    tokenize(lexer);
-    lex(lexer);
-
-    SyntaxTree *st = init_syntax_tree_parser(lexer);
-
-    syntax_tree_parse(st);
-
-    cson_lexer_free(lexer);
-    syntax_tree_free(st);
+    cson_free(cson);
 }

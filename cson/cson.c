@@ -1,22 +1,13 @@
 #include "./include/cson.h"
 #include "./include/lexer.h"
-#include "./include/parser.h"
 #include "./include/io.h"
-#include "./include/common.h"
+#include "include/st_parser.h"
+#include "libs/assertf.h"
+#include "libs/ll.h"
 #include <stdlib.h>
-#include <assert.h>
 #include <string.h>
 #include <stdio.h>
-
-static void print_tokens(const Cson_Lexer* lexer_cson) {
-    const Cson_Token* current = lexer_cson->root;
-
-    while (current != NULL) {
-        printf("%s :: %.*s\n", tk_kind_display(current->kind), current->value_len, current->value);
-
-        current = current->next;
-    }
-}
+#include <stdarg.h>
 
 Cson* cson_load(const char* filepath) {
     assert(filepath != NULL && "input should not be null");
@@ -51,17 +42,11 @@ Cson* cson_load(const char* filepath) {
     tokenize(lexer);
     lex(lexer);
 
-#ifdef DEBUG
-    print_tokens(lexer);
-#endif
+    SyntaxTree *st = init_syntax_tree_parser(lexer);
 
-    Parser* parser = parse(lexer);
+    syntax_tree_parse(st);
 
     cson_lexer_free(lexer);
-
-    if (parser == NULL) {
-        return NULL;
-    }
 
     Cson* cson = malloc(sizeof(Cson));
 
@@ -69,109 +54,122 @@ Cson* cson_load(const char* filepath) {
         return NULL;
     }
 
-#ifdef DEBUG
-    // for (int i = 0; i < parser->size; i++) {
-    //     const KeyPair pair = parser->pairs[i];
-
-    //     printf("'%.*s' = %s\n", pair.key_len, pair.key, pair.value);
-    // }
-#endif
-
-    cson->parser = parser;
+    cson->ast = st;
+    cson->root = st->root;
 
     return cson;
 }
 
-bool is_kind(const KeyPair* pair, const Cson_Token_Kind kind) {
-    return pair->kind == kind;
-}
+CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
+    const SyntaxTreeNode *current = node;
 
-bool match_keys(const KeyPair* pair, const char* key) {
-#ifdef DEBUG
-    printf("matching keys: '%.*s' == '%s' and %d == %d\n", pair->key_len, pair->key, key, (int)strlen(key), pair->key_len);
-#endif
-
-    return (int)strlen(key) == pair->key_len && strncmp(pair->key, key, pair->key_len) == 0;
-}
-
-int cson_read_string(const Cson* cson, const char* key, char** output) {
-    for (int i = 0; i < cson->parser->size; i++) {
-        KeyPair pair = cson->parser->pairs[i];
-
-        if (match_keys(&pair, key)) {
-            if (is_kind(&pair, NULL_CSON_TOKEN)) {
-                return OK_RETURN;
-            }
-
-            if (!is_kind(&pair, STRING_CSON_TOKEN)) {
-                return INVALID_TYPE_RETURN;
-            }
-
-            *output = pair.as.string;
-
-            return OK_RETURN;
-        }
+    if (current == NULL) {
+        return (CsonItem){
+            .return_code = CRC_NOT_FOUND,
+            .node = NULL
+        };
     }
 
-    return NOT_FOUND_RETURN;
-}
+    CsonItem item = { .node = NULL };
+    bool parsing = true;
 
-int cson_read_double(const Cson* cson, const char* key, double* output) {
-    for (int i = 0; i < cson->parser->size; i++) {
-        KeyPair pair = cson->parser->pairs[i];
+    char *p;
 
-        if (match_keys(&pair, key)) {
-            if (is_kind(&pair, NULL_CSON_TOKEN)) {
-                return OK_RETURN;
-            }
+    va_list ap;
+    va_start(ap, format);
+    for (p = format; *p && parsing; p++) {
+        switch (*p) {
+            case '%':
+                continue;
+            case 's':
+                if (current->kind != STNK_OBJECT) {
+                    item.node = NULL;
+                    item.return_code = CRC_INVALID_TYPE;
+                    parsing = false;
 
-            if (!is_kind(&pair, NUMBER_CSON_TOKEN)) {
-                return INVALID_TYPE_RETURN;
-            }
+                    break;
+                } else {
+                    char *key = va_arg(ap, char*);
+                    bool found = false;
 
-            *output = pair.as.number;
+                    LLIter iter = ll_iter(current->value.object);
 
-            return OK_RETURN;
+                    while (ll_iter_has(&iter)) {
+                        LLIterItem iter_item = ll_iter_consume(&iter);
+
+                        SyntaxTreeNode *node = iter_item.data;
+
+                        if (strncmp(key, node->name, strlen(node->name)) == 0) {
+                            found = true;
+                            current = node;
+
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        item.return_code = CRC_NOT_FOUND;
+                        parsing = false;
+                    }
+                }
+
+                break;
+            case 'd':
+                if (current->kind != STNK_ARRAY) {
+                    item.node = NULL;
+                    item.return_code = CRC_INVALID_TYPE;
+                    parsing = false;
+
+                    break;
+                } else {
+                    size_t index = va_arg(ap, size_t);
+
+                    if (index < 0 || index >= current->value.array->count) {
+                        item.node = NULL;
+                        item.return_code = CRC_INVALID_POS;
+                        parsing = false;
+
+                        break;
+                    }
+
+                    current = ll_find_by_index(current->value.array, index);
+                }
+                break;
+            default:
+                item.return_code = CRC_INVALID_FORMAT;
+                fprintf(stderr, "invalid formatting string '%c'. available only: %%s %%d\n", *p);
+                parsing = false;
+                break;
         }
     }
+    va_end(ap);
 
-    return NOT_FOUND_RETURN;
-}
-
-int cson_read_bool(const Cson* cson, const char* key, bool* output) {
-    for (int i = 0; i < cson->parser->size; i++) {
-        KeyPair pair = cson->parser->pairs[i];
-
-        if (match_keys(&pair, key)) {
-            if (is_kind(&pair, NULL_CSON_TOKEN)) {
-                return OK_RETURN;
-            }
-
-            if (!is_kind(&pair, TRUE_CSON_TOKEN) && !is_kind(&pair, FALSE_CSON_TOKEN)) {
-                return INVALID_TYPE_RETURN;
-            }
-
-            *output = pair.as.boolean;
-
-            return OK_RETURN;
-        }
+    if (parsing) {
+        item.node = current;
+        item.return_code = CRC_OK;
     }
 
-    return NOT_FOUND_RETURN;
+    return item;
 }
 
 void cson_free(Cson *cson) {
-    free(cson->parser);
+    syntax_tree_free(cson->ast);
     free(cson);
 }
 
-char* error_explain(const int code) {
+const char* return_code_as_cstr(CsonReturnCode code) {
     switch (code) {
-        case NOT_FOUND_RETURN:
-            return "not found";
-        case INVALID_TYPE_RETURN:
-            return "invalid type";
+        case CRC_OK:
+            return "OK";
+        case CRC_INVALID_TYPE:
+            return "INVALID_TYPE";
+        case CRC_INVALID_POS:
+            return "INVALID_POS";
+        case CRC_NOT_FOUND:
+            return "NOT_FOUND";
+        case CRC_INVALID_FORMAT:
+            return "INVALID_FORMAT";
         default:
-            return "unexpected error";
+            return "UNKOWN_RETURN_CODE";
     }
 }

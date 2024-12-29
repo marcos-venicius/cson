@@ -39,7 +39,6 @@ struct SyntaxTree {
     SyntaxTreeNode *root;
 };
 
-SyntaxTree *parse_syntax_tree(Cson_Lexer *cson);
 SyntaxTree *init_syntax_tree_parser(Cson_Lexer *lexer);
 void syntax_tree_parse(SyntaxTree *st);
 void syntax_tree_free(SyntaxTree *st);
