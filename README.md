@@ -99,3 +99,56 @@ Everything will be saved in a contiguous array in memory, and the search for any
 
 **Terrible, but, I think it will work**
 
+## Syntax Tree implementation example
+
+```console
+SyntaxTree {
+    root = SyntaxTreeNode {
+        kind = OBJECT,
+        value = SyntaxTreeNodeValue {
+            object = [
+                SyntaxTreeNode {
+                    name = "nome",
+                    kind = NUMBER,
+                    value = SyntaxTreeNodeValue {
+                        number = 1
+                    }
+                },
+                SyntaxTreeNode {
+                    name = "test",
+                    kind = ARRAY,
+                    value = SyntaxTreeNodeValue {
+                        array = [
+                            SyntaxTreeNode {
+                                kind = NUMBER,
+                                value = SyntaxTreeNodeValue {
+                                    number = 1
+                                }
+                            },
+                            SyntaxTreeNode {
+                                kind = NUMBER,
+                                value = SyntaxTreeNodeValue {
+                                    number = 2
+                                }
+                            },
+                            SyntaxTreeNode = {
+                                kind = OBJECT,
+                                value = SyntaxTreeNodeValue {
+                                    object = [
+                                        SyntaxTreeNode {
+                                            kind = NUMBER,
+                                            value = SyntaxTreeNodeValue {
+                                                number = 23
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    }
+}
+```
