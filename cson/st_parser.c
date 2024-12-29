@@ -1,10 +1,15 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "libs/assertf.h"
 #include "include/st_parser.h"
 #include "include/common.h"
 #include "include/lexer.h"
 #include "libs/ll.h"
+
+SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size);
+SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size);
 
 void free_syntax_tree_node(void *data) {
     SyntaxTreeNode *node = data;
@@ -55,9 +60,7 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
     SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_OBJECT;
-    node->value = (SyntaxTreeNodeValue){
-        .object = ll_new(free_syntax_tree_node, NULL), // SyntaxTreeNode[]
-    };
+    node->value.object = ll_new(free_syntax_tree_node, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -74,25 +77,29 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
     return node;
 }
 
-SyntaxTreeNode *create_syntax_tree_node_array() {
+SyntaxTreeNode *create_syntax_tree_node_array(char *name, size_t name_size) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
 
     node->kind = STNK_ARRAY;
-    node->value = (SyntaxTreeNodeValue){
-        .array = ll_new(free_syntax_tree_node, NULL), // SyntaxTreeNode[]
-    };
+    node->value.array = ll_new(free_syntax_tree_node, NULL); // SyntaxTreeNode[]
 
+    if (name_size > 0) {
+        char *null_terminated_name = malloc(name_size + 1);
+
+        memcpy(null_terminated_name, name, name_size);
+
+        null_terminated_name[name_size] = '\0';
+
+        node->name = null_terminated_name;
+    } else {
+        node->name = NULL;
+    }
+ 
     return node;
 }
 
 SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, char *data, size_t data_size) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
-
-    char *null_terminated_name = malloc(name_size + 1);
-
-    memcpy(null_terminated_name, name, name_size);
-
-    null_terminated_name[name_size] = '\0';
 
     node->kind = STNK_STRING;
 
@@ -108,7 +115,16 @@ SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, cha
         node->value.string = NULL;
     }
 
-    node->name = null_terminated_name;
+    if (name_size > 0) {
+        char *null_terminated_name = malloc(name_size + 1);
+
+        memcpy(null_terminated_name, name, name_size);
+
+        null_terminated_name[name_size] = '\0';
+        node->name = null_terminated_name;
+    } else {
+        node->name = NULL;
+    }
 
     return node;
 }
@@ -116,15 +132,18 @@ SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, cha
 SyntaxTreeNode *create_syntax_tree_node_bool(char *name, size_t name_size, bool value) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
 
-    char *null_terminated_name = malloc(name_size + 1);
-
-    memcpy(null_terminated_name, name, name_size);
-
-    null_terminated_name[name_size] = '\0';
-
     node->kind = STNK_BOOLEAN;
-    node->name = null_terminated_name;
     node->value.boolean = value;
+
+    if (name_size > 0) {
+        char *null_terminated_name = malloc(name_size + 1);
+        memcpy(null_terminated_name, name, name_size);
+
+        null_terminated_name[name_size] = '\0';
+        node->name = null_terminated_name;
+    } else {
+        node->name = NULL;
+    }
 
     return node;
 }
@@ -132,28 +151,35 @@ SyntaxTreeNode *create_syntax_tree_node_bool(char *name, size_t name_size, bool 
 SyntaxTreeNode *create_syntax_tree_node_number(char *name, size_t name_size, char *data, size_t data_size) {
     SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
 
-    char *null_terminated_name = malloc(name_size + 1);
     char *null_terminated_data = malloc(data_size + 1);
     char* endptr;
 
-    memcpy(null_terminated_name, name, name_size);
     memcpy(null_terminated_data, data, data_size);
-
-    null_terminated_name[name_size] = '\0';
 
     node->kind = STNK_NUMBER;
     node->value.number = strtod(null_terminated_data, &endptr);
-    node->name = null_terminated_name;
+
+    if (name_size > 0) {
+        char *null_terminated_name = malloc(name_size + 1);
+        memcpy(null_terminated_name, name, name_size);
+        
+        null_terminated_name[name_size] = '\0';
+        node->name = null_terminated_name;
+    } else {
+        node->name = NULL;
+    }
 
     return node;
 }
 
-SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, int name_size) {
-    SyntaxTreeNode *rootObject = create_syntax_tree_node_object(name, name_size);
+SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size) {
+    SyntaxTreeNode *object = create_syntax_tree_node_object(name, name_size);
 
     bool parsing = true;
 
     while (parsing) {
+        SyntaxTreeNode *node;
+
         Cson_Token *left = expect(next_token(st), KEY_CSON_TOKEN);
 
         expect(next_token(st), COLON_CSON_TOKEN);
@@ -162,52 +188,46 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, int name_si
 
         switch (right->kind) {
             case STRING_CSON_TOKEN: {
-                SyntaxTreeNode *node = create_syntax_tree_node_string(left->value, left->value_len, right->value, right->value_len);
-
-                ll_add(rootObject->value.object, node, 0);
+                node = create_syntax_tree_node_string(left->value, left->value_len, right->value, right->value_len);
 
                 break;
             }
             case NUMBER_CSON_TOKEN: {
-                SyntaxTreeNode *node = create_syntax_tree_node_number(left->value, left->value_len, right->value, right->value_len);
+                node = create_syntax_tree_node_number(left->value, left->value_len, right->value, right->value_len);
 
-                ll_add(rootObject->value.object, node, 0);
                 break;
             }
             case NULL_CSON_TOKEN: {
-                SyntaxTreeNode *node = create_syntax_tree_node_string(left->value, left->value_len, NULL, 0);
-
-                ll_add(rootObject->value.object, node, 0);
+                node = create_syntax_tree_node_string(left->value, left->value_len, NULL, 0);
 
                 break;
             }
             case TRUE_CSON_TOKEN: {
-                SyntaxTreeNode *node = create_syntax_tree_node_bool(left->value, left->value_len, true);
-
-                ll_add(rootObject->value.object, node, 0);
+                node = create_syntax_tree_node_bool(left->value, left->value_len, true);
 
                 break;
             }
             case FALSE_CSON_TOKEN: {
-                SyntaxTreeNode *node = create_syntax_tree_node_bool(left->value, left->value_len, false);
-
-                ll_add(rootObject->value.object, node, 0);
+                node = create_syntax_tree_node_bool(left->value, left->value_len, false);
 
                 break;
             }
             case LBRACE_CSON_TOKEN: {
-                SyntaxTreeNode *node = syntax_tree_parse_object(st, left->value, left->value_len);
-
-                ll_add(rootObject->value.object, node, 0);
+                node = syntax_tree_parse_object(st, left->value, left->value_len);
 
                 break;
             }
-            case LSQUARE_CSON_TOKEN:
+            case LSQUARE_CSON_TOKEN: {
+                node = syntax_tree_parse_array(st, left->value, left->value_len);
+
                 break;
+            }
             default:
                 fprintf(stderr, "unexpected token \"%s\"", tk_kind_display(right->kind));
                 exit(1);
         }
+
+        ll_add(object->value.object, node, 0);
 
         Cson_Token *token = next_token(st);
 
@@ -215,19 +235,81 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, int name_si
  
         switch (token->kind) {
             case RBRACE_CSON_TOKEN:
-                return rootObject;
+                return object;
             default:
                 expect(token, COMMA_CSON_TOKEN);
         }
     }
 
-    return rootObject;
+    return object;
 }
 
-SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st) {
-    printf("parsing array\n");
+SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size) {
+    SyntaxTreeNode *array = create_syntax_tree_node_array(name, name_size);
 
-    return NULL;
+    bool parsing = true;
+
+    while (parsing) {
+        SyntaxTreeNode *node;
+
+        Cson_Token *next = next_token(st);
+
+        switch (next->kind) {
+            case STRING_CSON_TOKEN: {
+                node = create_syntax_tree_node_string(NULL, 0, next->value, next->value_len);
+
+                break;
+            }
+            case NUMBER_CSON_TOKEN: {
+                node = create_syntax_tree_node_number(NULL, 0, next->value, next->value_len);
+
+                break;
+            }
+            case NULL_CSON_TOKEN: {
+                node = create_syntax_tree_node_string(NULL, 0, NULL, 0);
+
+                break;
+            }
+            case TRUE_CSON_TOKEN: {
+                node = create_syntax_tree_node_bool(NULL, 0, true);
+
+                break;
+            }
+            case FALSE_CSON_TOKEN: {
+                node = create_syntax_tree_node_bool(NULL, 0, false);
+
+                break;
+            }
+            case LBRACE_CSON_TOKEN: {
+                node = syntax_tree_parse_object(st, NULL, 0);
+
+                break;
+            }
+            case LSQUARE_CSON_TOKEN: {
+                node = syntax_tree_parse_array(st, NULL, 0);
+
+                break;
+            }
+            default:
+                fprintf(stderr, "unexpected token \"%s\"", tk_kind_display(next->kind));
+                exit(1);
+        }
+
+        ll_add(array->value.array, node, 0);
+
+        Cson_Token *token = next_token(st);
+
+        if (token == NULL) break;
+
+        switch (token->kind) {
+            case RSQUARE_CSON_TOKEN:
+                return array;
+            default:
+                expect(token, COMMA_CSON_TOKEN);
+        }
+    }
+
+    return array;
 }
 
 void syntax_tree_parse(SyntaxTree *st) {
@@ -242,7 +324,7 @@ void syntax_tree_parse(SyntaxTree *st) {
         case RBRACE_CSON_TOKEN:
             return;
         case LSQUARE_CSON_TOKEN:
-            node = syntax_tree_parse_array(st);
+            node = syntax_tree_parse_array(st, NULL, 0);
             break;
         case RSQUARE_CSON_TOKEN:
             return;
@@ -252,5 +334,5 @@ void syntax_tree_parse(SyntaxTree *st) {
             exit(1);
     }
 
-    stn_display(node, 0);
+    stn_display(node, 0, NULL);
 }

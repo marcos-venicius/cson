@@ -26,7 +26,7 @@ typedef union {
 } SyntaxTreeNodeValue;
 
 typedef struct {
-    char* name;
+    char *name;
 
     SyntaxTreeNodeKind kind;
 

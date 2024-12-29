@@ -4,12 +4,5 @@
   "float": 10.100,
   "null": null,
   "true": true,
-  "false": false,
-  "child": {
-    "field_one": "Hello, World",
-    "test": 42,
-    "inner": {
-      "message": "It works"
-    }
-  }
+  "false": false
 }

@@ -15,6 +15,8 @@ static const char* stnk_display(SyntaxTreeNodeKind kind) {
             return "STNK_NUMBER";
         case STNK_BOOLEAN:
             return "STNK_BOOLEAN";
+        default:
+            return "UNKNOWN";
     }
 }
 
@@ -52,13 +54,15 @@ int max(int a, int b) {
     return b;
 }
 
-void stn_display(SyntaxTreeNode *node, int level) {
+void stn_display(SyntaxTreeNode *node, int level, char *name) {
     switch (node->kind) {
-        case STNK_OBJECT:
+        case STNK_OBJECT: {
             printf("%*sSyntaxTreeNode {\n", level, "");
 
             if (node->name != NULL) {
                 printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
             }
 
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
@@ -70,27 +74,62 @@ void stn_display(SyntaxTreeNode *node, int level) {
                 LLIterItem item = ll_iter_consume(&iter);
                 SyntaxTreeNode *child = item.data;
 
-                stn_display(child, level + 8);
+                stn_display(child, level + 8, NULL);
             }
 
             printf("%*s]\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;
+        }
         case STNK_STRING:
             printf("%*sSyntaxTreeNode {\n", level, "");
-            printf("%*sname = %s,\n", level + 4, "", node->name);
+            if (node->name != NULL) {
+                printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
+            }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
             printf("%*sstring = \"%s\"\n", level + 8, "", node->value.string);
             printf("%*s}\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;
-        case STNK_ARRAY:
-            // printf("SyntaxTreeNode(name=\"%s\", kind=\"%s\", value=\"%s\")\n", node->name, stnk_display(node->kind), node->value.string);
+        case STNK_ARRAY: {
+            printf("%*sSyntaxTreeNode {\n", level, "");
+
+            if (node->name != NULL) {
+                printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
+            }
+
+            printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
+            printf("%*svalue = SyntaxTreeNodeValue [\n", level + 4, "");
+
+            LLIter iter = ll_iter(node->value.array);
+
+            while (ll_iter_has(&iter)) {
+                LLIterItem item = ll_iter_consume(&iter);
+                SyntaxTreeNode *child = item.data;
+
+                char index_buf[20];
+
+                snprintf(index_buf, sizeof(index_buf), "%ld", item.index);
+
+                stn_display(child, level + 8, index_buf);
+            }
+
+            printf("%*s]\n", level + 4, "");
+            printf("%*s}\n", level, "");
             break;
+        }
         case STNK_NUMBER:
             printf("%*sSyntaxTreeNode {\n", level, "");
-            printf("%*sname = %s,\n", level + 4, "", node->name);
+            if (node->name != NULL) {
+                printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
+            }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
             printf("%*snumber = %f\n", level + 8, "", node->value.number);
@@ -99,7 +138,11 @@ void stn_display(SyntaxTreeNode *node, int level) {
             break;
         case STNK_BOOLEAN:
             printf("%*sSyntaxTreeNode {\n", level, "");
-            printf("%*sname = %s,\n", level + 4, "", node->name);
+            if (node->name != NULL) {
+                printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
+            }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
             printf("%*sboolean = %s\n", level + 8, "", node->value.boolean ? "true" : "false");
