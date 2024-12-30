@@ -4,8 +4,11 @@ _A very simple JSON reader for C_
 
 ![image](https://github.com/user-attachments/assets/06c267a5-15fd-4746-add2-c4b57a9e95f5)
 
-
 ![image](https://github.com/user-attachments/assets/fad4d955-82d0-4fb8-ab66-bb3a88bf262f)
+
+**Better syntax error reporting**
+
+![image](https://github.com/user-attachments/assets/278b00ec-6f61-423c-b5bd-18de82f73be4)
 
 ## Implementing a new parser
 
