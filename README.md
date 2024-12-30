@@ -52,6 +52,17 @@ $ make nested_stuff
 $ ./nested_stuff
 ```
 
+## Next improvements
+
+- Make difference between floats and integers
+- tokenize, lex and parse negative numbers
+- Unescape strings
+- Generate a libray from Cson
+
+## Next steps
+
+- Create a first unstable release
+
 ## Disclaimer
 
 > [!NOTE]
