@@ -54,8 +54,8 @@ $ ./nested_stuff
 
 ## Next improvements
 
+- Fix the formatter scaping strings
 - Tokenize, lex and parse negative numbers
-- Unescape strings
 - Generate a libray from Cson
 
 ## Next steps

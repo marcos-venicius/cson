@@ -17,6 +17,53 @@ static Cson_Token *next_token(SyntaxTree *st) {
     return st->token;
 }
 
+static char* unescape_sequence(char* string) {
+    int len = (int)strlen(string);
+    int string_i = 0;
+    int scape_i = 0;
+    char* unescaped = calloc(sizeof(char), len);
+
+    while (string_i < len) {
+        if (string[string_i] == '\\') {
+            switch (string[string_i + 1]) {
+                case '"':
+                    unescaped[scape_i] = '"';
+                    break;
+                case '\\':
+                    unescaped[scape_i] = '\\';
+                    break;
+                case 'n':
+                    unescaped[scape_i] = '\n';
+                    break;
+                case 't':
+                    unescaped[scape_i] = '\t';
+                    break;
+                case 'b':
+                    unescaped[scape_i] = '\t';
+                    break;
+                case 'r':
+                    unescaped[scape_i] = '\r';
+                    break;
+                case 'f':
+                    unescaped[scape_i] = '\f';
+                    break;
+                default:
+                    fprintf(stderr, "invalid escape string \"%c%c\"\n", string[string_i], string[string_i + 1]);
+                    exit(1);
+            }
+            string_i++;
+        } else {
+            unescaped[scape_i] = string[string_i];
+        }
+        string_i++;
+        scape_i++;
+    }
+
+    free(string);
+
+    return unescaped;
+}
+
 Cson_Token *expect(Cson_Token *token, Cson_Token_Kind kind) {
     if (token == NULL || token->kind != kind) {
         fprintf(stderr, "unexpected token \"%s\"\n", tk_kind_display(token->kind));
@@ -92,7 +139,7 @@ SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, cha
 
         null_terminated_data[data_size] = '\0';
 
-        node->value.as_string = null_terminated_data;
+        node->value.as_string = unescape_sequence(null_terminated_data);
     } else {
         node->value.as_string = NULL;
     }
