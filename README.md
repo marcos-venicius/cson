@@ -54,7 +54,6 @@ $ ./nested_stuff
 
 ## Next improvements
 
-- Fix basic example
 - Make difference between floats and integers
 - Tokenize, lex and parse negative numbers
 - Unescape strings
