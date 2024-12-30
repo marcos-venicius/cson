@@ -1,6 +1,7 @@
 #include "./include/cson.h"
 #include "./include/lexer.h"
 #include "./include/io.h"
+#include "include/common.h"
 #include "include/st_parser.h"
 #include "libs/assertf.h"
 #include "libs/ll.h"
@@ -182,6 +183,120 @@ bool cson_unwrap_boolean(CsonItem item) {
 
 double cson_unwrap_number(CsonItem item) {
     return item.node->value.number;
+}
+
+static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int shift, bool is_last) {
+    switch (node->kind) {
+        case STNK_OBJECT: {
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": {", shift, "", node->name);
+            } else {
+                fprintf(stdout, "%*s{", shift, "");
+            }
+
+            if (node->value.object->count > 0) {
+                fprintf(stdout, "\n");                
+
+                LLIter iter = ll_iter(node->value.object);
+
+                while (ll_iter_has(&iter)) {
+                    LLIterItem item = ll_iter_consume(&iter);
+                    SyntaxTreeNode *child = item.data;
+
+                    print_json(child, padding, shift + padding, item.index == node->value.object->count - 1);
+                }
+
+                fprintf(stdout, "%*s}", shift, "");
+            } else {
+                fprintf(stdout, "}");
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+
+            break;
+        }
+        case STNK_ARRAY: {
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": [", shift, "", node->name);
+            } else {
+                fprintf(stdout, "%*s[", shift, "");
+            }
+
+            if (node->value.array->count > 0) {
+                fprintf(stdout, "\n");
+
+                LLIter iter = ll_iter(node->value.object);
+
+                while (ll_iter_has(&iter)) {
+                    LLIterItem item = ll_iter_consume(&iter);
+                    SyntaxTreeNode *child = item.data;
+
+                    print_json(child, padding, shift + padding, item.index == node->value.object->count - 1);
+                }
+
+                fprintf(stdout, "%*s]", shift, "");
+            } else {
+                fprintf(stdout, "]");
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+            break;
+        }
+        case STNK_STRING:
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": \"%s\"", shift, "", node->name, node->value.string);
+            } else {
+                fprintf(stdout, "%*s\"%s\"", shift, "", node->value.string);
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+            break;
+        case STNK_NUMBER:
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": %f", shift, "", node->name, node->value.number);
+            } else {
+                fprintf(stdout, "%*s%f", shift, "", node->value.number);
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+            break;
+        case STNK_BOOLEAN:
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": %s", shift, "", node->name, node->value.boolean ? "true" : "false");
+            } else {
+                fprintf(stdout, "%*s%s", shift, "", node->value.boolean ? "true" : "false");
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+            break;
+        default:
+            fprintf(stderr, "error: print not implemented for \"%s\"\n", stnk_display(node->kind));
+            break;
+    }
+}
+
+void cson_format(Cson *cson, unsigned int padding) {
+    print_json(cson->root, padding, 0, true);
 }
 
 void cson_free(Cson *cson) {

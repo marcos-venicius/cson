@@ -3,7 +3,7 @@
 #include "include/st_parser.h"
 #include "libs/ll.h"
 
-static const char* stnk_display(SyntaxTreeNodeKind kind) {
+const char* stnk_display(SyntaxTreeNodeKind kind) {
     switch (kind) {
         case STNK_OBJECT:
             return "STNK_OBJECT";

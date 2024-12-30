@@ -27,6 +27,7 @@ Cson *cson_load(const char *filepath);
 // Usage like: create_path(cson, "%s%s%d%s", "foo", "bar", 0, "bazz");
 // This will match: { foo: { bar: [ { bazz: 10 } ] } }
 CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...);
+void cson_format(Cson *cson, unsigned int padding);
 
 char *cson_unwrap_string(CsonItem item);
 bool cson_unwrap_boolean(CsonItem item);
