@@ -164,7 +164,13 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name
     while (parsing) {
         SyntaxTreeNode *node;
 
-        Cson_Token *left = expect(next_token(st), KEY_CSON_TOKEN);
+        Cson_Token *left = next_token(st);
+
+        if (left->kind == RBRACE_CSON_TOKEN) {
+            break;
+        }
+
+        expect(left, KEY_CSON_TOKEN);
 
         expect(next_token(st), COLON_CSON_TOKEN);
 

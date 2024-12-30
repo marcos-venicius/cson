@@ -9,24 +9,21 @@ int main() {
         return 1;
     }
 
-    char* one;
-    char* two;
+    CsonItem result;
 
-    int result;
-
-    if ((result = cson_read_string(cson, "one.two.three.find", &one)) != OK_RETURN) {
-        fprintf(stderr, "one: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s%s%s%s", "one", "two", "three", "find")).return_code != CRC_OK) {
+        fprintf(stderr, "one: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("one: %s\n", one);
+    printf("one: %s\n", result.node->value.string);
 
-    if ((result = cson_read_string(cson, "one.two.neighbor", &two)) != OK_RETURN) {
-        fprintf(stderr, "two: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s%s%s", "one", "two", "neighbor")).return_code != CRC_OK) {
+        fprintf(stderr, "two: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("two: %s\n", two);
+    printf("two: %s\n", result.node->value.string);
 
     cson_free(cson);
 
