@@ -10,7 +10,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-Cson* cson_load(const char* filepath) {
+Cson* cson_load(const char *filepath) {
     assert(filepath != NULL && "input should not be null");
 
     char* content;
@@ -21,24 +21,7 @@ Cson* cson_load(const char* filepath) {
         return NULL;
     }
 
-    Cson_Lexer* lexer = malloc(sizeof(Cson_Lexer));
-
-    if (lexer == NULL) {
-        free(content);
-
-        perror("could not allocate memory to the lexer struct");
-
-        return NULL;
-    }
-
-    lexer->content = content;
-    lexer->content_len = size;
-    lexer->tokens_len = 0;
-    lexer->bot = 0;
-    lexer->cursor = 0;
-    lexer->has_error = false;
-    lexer->root = NULL;
-    lexer->tail = NULL;
+    Cson_Lexer* lexer = new_cson_lexer(filepath, content, size);
 
     tokenize(lexer);
     lex(lexer);

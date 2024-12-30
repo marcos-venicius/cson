@@ -38,15 +38,19 @@ struct Cson_Token {
 };
 
 typedef struct {
-	char* content;
+	char *content;
+	const char *filename;
 	unsigned long content_len;
 	unsigned long cursor;
 	int bot;
+	int line, col;
 	bool has_error;
 	int tokens_len;
-	Cson_Token* root;
-	Cson_Token* tail;
+	Cson_Token *root;
+	Cson_Token *tail;
 } Cson_Lexer;
+
+Cson_Lexer *new_cson_lexer(const char *filename, char *content, const unsigned long content_size);
 
 void cson_lexer_free(Cson_Lexer* lexer_cson);
 

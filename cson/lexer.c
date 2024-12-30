@@ -1,18 +1,66 @@
+#include <errno.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "./include/lexer.h"
+#include "include/common.h"
 
-void invalid_char_error(Cson_Lexer* lexer_cson) {
-    lexer_cson->has_error = true;
+void error_message(Cson_Lexer *lexer, const char *const error, const char *const description, ...) {
+    va_list args;
+    va_start(args, description);
 
-    const int symbol_size = lexer_cson->cursor - lexer_cson->bot + 1;
-    const char* symbol_start_pointer = &lexer_cson->content[lexer_cson->bot];
+    int context_size;
+    int max_context_size = 50;
 
-    fprintf(stderr, "invalid char near \"%.*s\"\n", symbol_size, symbol_start_pointer);
+    char *context = lexer->content + lexer->cursor;
+
+    for (context_size = 0; context_size < max_context_size && lexer->cursor + context_size < lexer->content_len; ++context_size, ++context) {
+        if (*context == '\n') {
+            --context_size;
+            break;
+        }
+    }
+
+    char *line = lexer->content + lexer->cursor - (lexer->col - 1);
+    int beginning_of_the_token = lexer->cursor - lexer->bot - lexer->col + 1;
+    int col = lexer->col - lexer->cursor + lexer->bot;
+
+    fprintf(stderr, "%s:%d:%d %s\n\n", lexer->filename, lexer->line, col, error);
+    fprintf(stderr, "%.*s\n", lexer->col + context_size, line);
+    fprintf(stderr, "%*.s^\n", beginning_of_the_token, "");
+    fprintf(stderr, "%*.s", beginning_of_the_token, "");
+    vfprintf(stderr, description, args);
+    fprintf(stderr, "\n");
+
+    va_end(args);
 }
 
-char chr(const Cson_Lexer* lexer_cson) {
+Cson_Lexer *new_cson_lexer(const char *filename, char *content, const unsigned long content_size) {
+    Cson_Lexer* lexer = malloc(sizeof(Cson_Lexer));
+
+    if (lexer == NULL) {
+        fprintf(stderr, "could not allocate memory for the lexer due to: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    lexer->filename = filename;
+    lexer->line = 1;
+    lexer->col = 1;
+
+    lexer->content = content;
+    lexer->content_len = content_size;
+    lexer->tokens_len = 0;
+    lexer->bot = 0;
+    lexer->cursor = 0;
+    lexer->has_error = false;
+    lexer->root = NULL;
+    lexer->tail = NULL;
+
+    return lexer;
+}
+
+char chr(Cson_Lexer *lexer_cson) {
     if (lexer_cson->cursor < lexer_cson->content_len) {
         return lexer_cson->content[lexer_cson->cursor];
     }
@@ -33,24 +81,18 @@ bool is_digit(const char c) {
 }
 
 bool is_valid_symbol_char(const char c) {
-    switch (c) {
-        case 't':
-        case 'r':
-        case 'e':
-        case 'f':
-        case 'a':
-        case 's':
-        case 'n':
-        case 'u':
-        case 'l':
-            return true;
-        default:
-            return false;
-    }
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 void next(Cson_Lexer* lexer_cson, const int with) {
     if (lexer_cson->cursor < lexer_cson->content_len) {
+        if (lexer_cson->content[lexer_cson->cursor] == '\n') {
+            ++lexer_cson->line;
+            lexer_cson->col = 1;
+        } else {
+            lexer_cson->col += with;
+        }
+
         lexer_cson->cursor += with;
     }
 }
@@ -69,8 +111,8 @@ int save_token_chunk(Cson_Lexer* lexer_cson, const Cson_Token_Kind kind, const i
     Cson_Token* token = malloc(sizeof(Cson_Token));
 
     if (token == NULL) {
-        perror("could not allocate memory to save the token");
-        return -1;
+        fprintf(stderr, "ERROR: could not allocate memory for the token kind %s due to: %s\n", tk_kind_display(kind), strerror(errno));
+        exit(1);
     }
 
     token->kind = kind;
@@ -121,7 +163,7 @@ void save_string(Cson_Lexer* lexer_cson) {
                     next(lexer_cson, 1);
                     break;
                 default:
-                    fprintf(stderr, "invalid espace string \"%c\"\n", nchr(lexer_cson));
+                    error_message(lexer_cson, "invalid escape string", "\"\\%c\" is not a valid scape string", nchr(lexer_cson));
                     exit(1);
             }
         }
@@ -155,11 +197,6 @@ void save_number(Cson_Lexer* lexer_cson) {
         isFloating = true;
     }
 
-    if (nchr(lexer_cson) == '.') {
-        invalid_char_error(lexer_cson);
-        return;
-    }
-
     if (isFloating) {
         save_token(lexer_cson, FLOAT_CSON_TOKEN);
     } else {
@@ -169,31 +206,23 @@ void save_number(Cson_Lexer* lexer_cson) {
     next(lexer_cson, 1);
 }
 
-void save_symbol(Cson_Lexer* lexer_cson, const char* symbol, const Cson_Token_Kind kind) {
+void save_symbol(Cson_Lexer* lexer_cson) {
     while (is_valid_symbol_char(nchr(lexer_cson))) {
         next(lexer_cson, 1);
     }
 
-    if (strncmp(&lexer_cson->content[lexer_cson->bot], symbol, lexer_cson->cursor - lexer_cson->bot + 1) != 0) {
-        invalid_char_error(lexer_cson);
-        return;
+    if (strncmp(&lexer_cson->content[lexer_cson->bot], "true", 4) == 0) {
+        save_token(lexer_cson, TRUE_CSON_TOKEN);
+    } else if (strncmp(&lexer_cson->content[lexer_cson->bot], "false", 5) == 0) {
+        save_token(lexer_cson, FALSE_CSON_TOKEN);
+    } else if (strncmp(&lexer_cson->content[lexer_cson->bot], "null", 4) == 0) {
+        save_token(lexer_cson, NULL_CSON_TOKEN);
+    } else {
+        error_message(lexer_cson, "invalid symbol", "\"%.*s\" is not a valid symbol", lexer_cson->cursor - lexer_cson->bot + 1, lexer_cson->content + lexer_cson->bot);
+        exit(1);
     }
 
-    save_token(lexer_cson, kind);
-
     next(lexer_cson, 1);
-}
-
-void save_true(Cson_Lexer* lexer_cson) {
-    save_symbol(lexer_cson, "true", TRUE_CSON_TOKEN);
-}
-
-void save_false(Cson_Lexer* lexer_cson) {
-    save_symbol(lexer_cson, "false", FALSE_CSON_TOKEN);
-}
-
-void save_null(Cson_Lexer* lexer_cson) {
-    save_symbol(lexer_cson, "null", NULL_CSON_TOKEN);
 }
 
 void tokenize(Cson_Lexer* lexer_cson) {
@@ -218,16 +247,16 @@ void tokenize(Cson_Lexer* lexer_cson) {
             case '3': case '4': case '5':
             case '6': case '7': case '8':
             case '9': save_number(lexer_cson); break;
-            case 't': save_true(lexer_cson); break;
-            case 'f': save_false(lexer_cson); break;
-            case 'n': save_null(lexer_cson); break;
             case '"': save_string(lexer_cson); break;
+            case 'a'...'z':
+            case 'A'...'Z':
+                save_symbol(lexer_cson); break;
             case ' ':
             case '\n': next(lexer_cson, 1); break;
             default:
                 lexer_cson->has_error = true;
-                fprintf(stderr, "unrecognized character \"%c\"\n", c);
-                return;
+                error_message(lexer_cson, "unrecognized character", "unrecognized character '%c'", c);
+                exit(1);
         }
     }
 }
