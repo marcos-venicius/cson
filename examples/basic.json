@@ -1,7 +1,7 @@
 {
   "string": "\"https://github.com\t/marcos-\\n\nvenicius/cson\"",
   "integer": 10,
-  "float": 10.100,
+  "float": 3.141592653589793,
   "null": null,
   "true": true,
   "false": false

@@ -2,7 +2,7 @@
 #define CSON_ST_PARSE_H_
 
 #include <stdbool.h>
-#include "lexer.h"
+#include "./lexer.h"
 #include "../libs/ll.h"
 
 typedef struct SyntaxTree SyntaxTree;
@@ -11,24 +11,28 @@ typedef enum {
     STNK_OBJECT,
     STNK_ARRAY,
     STNK_STRING,
-    STNK_NUMBER,
+    STNK_FLOAT,
+    STNK_INTEGER,
     STNK_BOOLEAN
 } SyntaxTreeNodeKind;
 
 typedef union {
-    double number;
-    bool boolean;
-    char* string;
+    long double as_float;
+    long as_integer;
+    bool as_bool;
+    char* as_string;
     // SyntaxTreeNode[]
-    LL *array;
+    LL *as_array;
     // SyntaxTreeNode[]
-    LL *object;
+    LL *as_object;
 } SyntaxTreeNodeValue;
 
 typedef struct {
     char *name;
 
     SyntaxTreeNodeKind kind;
+
+    int precision; // only for floats. Should have a better way todo this.
 
     SyntaxTreeNodeValue value;
 } SyntaxTreeNode;

@@ -1,10 +1,10 @@
 #include "./include/cson.h"
 #include "./include/lexer.h"
 #include "./include/io.h"
-#include "include/common.h"
-#include "include/st_parser.h"
-#include "libs/assertf.h"
-#include "libs/ll.h"
+#include "./include/common.h"
+#include "./include/st_parser.h"
+#include "./libs/assertf.h"
+#include "./libs/ll.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -107,7 +107,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                     char *key = va_arg(ap, char*);
                     bool found = false;
 
-                    LLIter iter = ll_iter(current->value.object);
+                    LLIter iter = ll_iter(current->value.as_object);
 
                     while (ll_iter_has(&iter)) {
                         LLIterItem iter_item = ll_iter_consume(&iter);
@@ -140,14 +140,14 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                 } else {
                     size_t index = va_arg(ap, size_t);
 
-                    if (index < 0 || index >= current->value.array->count) {
+                    if (index < 0 || index >= current->value.as_array->count) {
                         return_code = CRC_INVALID_POS;
                         parsing = false;
 
                         break;
                     }
 
-                    current = ll_find_by_index(current->value.array, index);
+                    current = ll_find_by_index(current->value.as_array, index);
                     return_code = CRC_OK;
                 }
                 break;
@@ -174,15 +174,19 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
 }
 
 char *cson_unwrap_string(CsonItem item) {
-    return item.node->value.string;
+    return item.node->value.as_string;
 }
 
 bool cson_unwrap_boolean(CsonItem item) {
-    return item.node->value.boolean;    
+    return item.node->value.as_bool;    
 }
 
-double cson_unwrap_number(CsonItem item) {
-    return item.node->value.number;
+long double cson_unwrap_float(CsonItem item) {
+    return item.node->value.as_float;
+}
+
+long cson_unwrap_integer(CsonItem item) {
+    return item.node->value.as_integer;
 }
 
 static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int shift, bool is_last) {
@@ -194,16 +198,16 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
                 fprintf(stdout, "%*s{", shift, "");
             }
 
-            if (node->value.object->count > 0) {
+            if (node->value.as_object->count > 0) {
                 fprintf(stdout, "\n");                
 
-                LLIter iter = ll_iter(node->value.object);
+                LLIter iter = ll_iter(node->value.as_object);
 
                 while (ll_iter_has(&iter)) {
                     LLIterItem item = ll_iter_consume(&iter);
                     SyntaxTreeNode *child = item.data;
 
-                    print_json(child, padding, shift + padding, item.index == node->value.object->count - 1);
+                    print_json(child, padding, shift + padding, item.index == node->value.as_object->count - 1);
                 }
 
                 fprintf(stdout, "%*s}", shift, "");
@@ -226,16 +230,16 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
                 fprintf(stdout, "%*s[", shift, "");
             }
 
-            if (node->value.array->count > 0) {
+            if (node->value.as_array->count > 0) {
                 fprintf(stdout, "\n");
 
-                LLIter iter = ll_iter(node->value.object);
+                LLIter iter = ll_iter(node->value.as_object);
 
                 while (ll_iter_has(&iter)) {
                     LLIterItem item = ll_iter_consume(&iter);
                     SyntaxTreeNode *child = item.data;
 
-                    print_json(child, padding, shift + padding, item.index == node->value.object->count - 1);
+                    print_json(child, padding, shift + padding, item.index == node->value.as_object->count - 1);
                 }
 
                 fprintf(stdout, "%*s]", shift, "");
@@ -252,9 +256,9 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
         }
         case STNK_STRING:
             if (node->name != NULL) {
-                fprintf(stdout, "%*s\"%s\": \"%s\"", shift, "", node->name, node->value.string);
+                fprintf(stdout, "%*s\"%s\": \"%s\"", shift, "", node->name, node->value.as_string);
             } else {
-                fprintf(stdout, "%*s\"%s\"", shift, "", node->value.string);
+                fprintf(stdout, "%*s\"%s\"", shift, "", node->value.as_string);
             }
 
             if (is_last) {
@@ -263,11 +267,24 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
                 fprintf(stdout, ",\n");
             }
             break;
-        case STNK_NUMBER:
+        case STNK_FLOAT:
             if (node->name != NULL) {
-                fprintf(stdout, "%*s\"%s\": %f", shift, "", node->name, node->value.number);
+                fprintf(stdout, "%*s\"%s\": %.*Lf", shift, "", node->name, node->precision, node->value.as_float);
             } else {
-                fprintf(stdout, "%*s%f", shift, "", node->value.number);
+                fprintf(stdout, "%*s%.*Lf", shift, "", node->precision, node->value.as_float);
+            }
+
+            if (is_last) {
+                fprintf(stdout, "\n");
+            } else {
+                fprintf(stdout, ",\n");
+            }
+            break;
+        case STNK_INTEGER:
+            if (node->name != NULL) {
+                fprintf(stdout, "%*s\"%s\": %ld", shift, "", node->name, node->value.as_integer);
+            } else {
+                fprintf(stdout, "%*s%ld", shift, "", node->value.as_integer);
             }
 
             if (is_last) {
@@ -278,9 +295,9 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
             break;
         case STNK_BOOLEAN:
             if (node->name != NULL) {
-                fprintf(stdout, "%*s\"%s\": %s", shift, "", node->name, node->value.boolean ? "true" : "false");
+                fprintf(stdout, "%*s\"%s\": %s", shift, "", node->name, node->value.as_bool ? "true" : "false");
             } else {
-                fprintf(stdout, "%*s%s", shift, "", node->value.boolean ? "true" : "false");
+                fprintf(stdout, "%*s%s", shift, "", node->value.as_bool ? "true" : "false");
             }
 
             if (is_last) {

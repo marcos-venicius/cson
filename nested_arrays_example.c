@@ -25,7 +25,7 @@ int main() {
         return 1;
     }
 
-    printf("two: %s\n", two.node->value.string);
+    printf("two: %s\n", cson_unwrap_string(two));
 
     cson_free(cson);
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "./include/common.h"
-#include "include/st_parser.h"
-#include "libs/ll.h"
+#include "./include/st_parser.h"
+#include "./libs/ll.h"
 
 const char* stnk_display(SyntaxTreeNodeKind kind) {
     switch (kind) {
@@ -11,8 +11,10 @@ const char* stnk_display(SyntaxTreeNodeKind kind) {
             return "STNK_ARRAY";
         case STNK_STRING:
             return "STNK_STRING";
-        case STNK_NUMBER:
-            return "STNK_NUMBER";
+        case STNK_FLOAT:
+            return "STNK_FLOAT";
+        case STNK_INTEGER:
+            return "STNK_INTEGER";
         case STNK_BOOLEAN:
             return "STNK_BOOLEAN";
         default:
@@ -30,7 +32,8 @@ const char* tk_kind_display(const Cson_Token_Kind kind) {
         case COMMA_CSON_TOKEN: return "COMMA";
         case KEY_CSON_TOKEN: return "KEY";
         case STRING_CSON_TOKEN: return "STRING";
-        case NUMBER_CSON_TOKEN: return "NUMBER";
+        case FLOAT_CSON_TOKEN: return "FLOAT";
+        case INTEGER_CSON_TOKEN: return "INTEGER";
         case NULL_CSON_TOKEN: return "NULL";
         case TRUE_CSON_TOKEN: return "TRUE";
         case FALSE_CSON_TOKEN: return "FALSE";
@@ -68,7 +71,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
 
-            LLIter iter = ll_iter(node->value.object);
+            LLIter iter = ll_iter(node->value.as_object);
 
             while (ll_iter_has(&iter)) {
                 LLIterItem item = ll_iter_consume(&iter);
@@ -90,7 +93,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
-            printf("%*sstring = \"%s\"\n", level + 8, "", node->value.string);
+            printf("%*sstring = \"%s\"\n", level + 8, "", node->value.as_string);
             printf("%*s}\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;
@@ -106,7 +109,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue [\n", level + 4, "");
 
-            LLIter iter = ll_iter(node->value.array);
+            LLIter iter = ll_iter(node->value.as_array);
 
             while (ll_iter_has(&iter)) {
                 LLIterItem item = ll_iter_consume(&iter);
@@ -123,7 +126,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             printf("%*s}\n", level, "");
             break;
         }
-        case STNK_NUMBER:
+        case STNK_FLOAT:
             printf("%*sSyntaxTreeNode {\n", level, "");
             if (node->name != NULL) {
                 printf("%*sname = %s,\n", level + 4, "", node->name);
@@ -132,7 +135,20 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
-            printf("%*snumber = %f\n", level + 8, "", node->value.number);
+            printf("%*snumber = %Lf\n", level + 8, "", node->value.as_float);
+            printf("%*s}\n", level + 4, "");
+            printf("%*s}\n", level, "");
+            break;
+        case STNK_INTEGER:
+            printf("%*sSyntaxTreeNode {\n", level, "");
+            if (node->name != NULL) {
+                printf("%*sname = %s,\n", level + 4, "", node->name);
+            } else if (name != NULL) {
+                printf("%*sindex = %s,\n", level + 4, "", name);
+            }
+            printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
+            printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
+            printf("%*snumber = %ld\n", level + 8, "", node->value.as_integer);
             printf("%*s}\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;
@@ -145,7 +161,7 @@ void stn_display(SyntaxTreeNode *node, int level, char *name) {
             }
             printf("%*skind = %s,\n", level + 4, "", stnk_display(node->kind));
             printf("%*svalue = SyntaxTreeNodeValue {\n", level + 4, "");
-            printf("%*sboolean = %s\n", level + 8, "", node->value.boolean ? "true" : "false");
+            printf("%*sboolean = %s\n", level + 8, "", node->value.as_bool ? "true" : "false");
             printf("%*s}\n", level + 4, "");
             printf("%*s}\n", level, "");
             break;

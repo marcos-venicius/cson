@@ -21,39 +21,39 @@ int main() {
         return 1;
     }
 
-    printf("stringField: %s\n", string.node->value.string);
+    printf("stringField: %s\n", cson_unwrap_string(string));
 
     if (integer.return_code != CRC_OK) {
         fprintf(stderr, "integerField: %s\n", return_code_as_cstr(integer.return_code));
     } else {
-        printf("integerField: %f\n", integer.node->value.number);
+        printf("integerField: %ld\n", cson_unwrap_integer(integer));
     }
 
 
     if (flutuant.return_code != CRC_OK) {
         fprintf(stderr, "floatField: %s\n", return_code_as_cstr(flutuant.return_code));
     } else {
-        printf("floatField: %f\n", flutuant.node->value.number);
+        printf("floatField: %.*Lf\n", flutuant.node->precision, cson_unwrap_float(flutuant));
     }
 
 
     if (null.return_code != CRC_OK) {
         fprintf(stderr, "nullField: %s\n", return_code_as_cstr(null.return_code));
     } else {
-        printf("nullField: %s\n", null.node->value.string);
+        printf("nullField: %s\n", cson_unwrap_string(null));
     }
 
     if (booleanTrue.return_code != CRC_OK) {
         fprintf(stderr, "trueField: %s\n", return_code_as_cstr(booleanTrue.return_code));
     } else {
-        printf("trueField: %d\n", booleanTrue.node->value.boolean);
+        printf("trueField: %d\n", cson_unwrap_boolean(booleanTrue));
     }
 
 
     if (booleanFalse.return_code != CRC_OK) {
         fprintf(stderr, "falseField: %s\n", return_code_as_cstr(booleanFalse.return_code));
     } else {
-        printf("falseField: %d\n", booleanFalse.node->value.boolean);
+        printf("falseField: %d\n", cson_unwrap_boolean(booleanFalse));
     }
 
     cson_free(cson);

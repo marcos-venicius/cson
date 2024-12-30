@@ -1,8 +1,8 @@
 #ifndef CSON_H_
 #define CSON_H_
 
-#include "lexer.h"
-#include "st_parser.h"
+#include "./lexer.h"
+#include "./st_parser.h"
 
 typedef enum {
     CRC_NOT_FOUND = 404,
@@ -31,7 +31,8 @@ void cson_format(Cson *cson, unsigned int padding);
 
 char *cson_unwrap_string(CsonItem item);
 bool cson_unwrap_boolean(CsonItem item);
-double cson_unwrap_number(CsonItem item);
+long double cson_unwrap_float(CsonItem item);
+long cson_unwrap_integer(CsonItem item);
 
 const char* return_code_as_cstr(CsonReturnCode code);
 

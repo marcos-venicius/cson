@@ -1,5 +1,5 @@
-#include "cson/include/common.h"
-#include "cson/include/cson.h"
+#include "./cson/include/common.h"
+#include "./cson/include/cson.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

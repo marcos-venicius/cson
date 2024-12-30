@@ -1,10 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "include/st_parser.h"
-#include "include/common.h"
-#include "include/lexer.h"
-#include "libs/ll.h"
+#include "./include/st_parser.h"
+#include "./include/common.h"
+#include "./include/lexer.h"
+#include "./libs/ll.h"
 
 SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size);
 SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size);
@@ -42,7 +42,7 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
     SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_OBJECT;
-    node->value.object = ll_new(NULL, NULL); // SyntaxTreeNode[]
+    node->value.as_object = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -60,10 +60,10 @@ SyntaxTreeNode *create_syntax_tree_node_object(char *name, size_t name_size) {
 }
 
 SyntaxTreeNode *create_syntax_tree_node_array(char *name, size_t name_size) {
-    SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
+    SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_ARRAY;
-    node->value.array = ll_new(NULL, NULL); // SyntaxTreeNode[]
+    node->value.as_array = ll_new(NULL, NULL); // SyntaxTreeNode[]
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -81,7 +81,7 @@ SyntaxTreeNode *create_syntax_tree_node_array(char *name, size_t name_size) {
 }
 
 SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, char *data, size_t data_size) {
-    SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
+    SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_STRING;
 
@@ -92,9 +92,9 @@ SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, cha
 
         null_terminated_data[data_size] = '\0';
 
-        node->value.string = null_terminated_data;
+        node->value.as_string = null_terminated_data;
     } else {
-        node->value.string = NULL;
+        node->value.as_string = NULL;
     }
 
     if (name_size > 0) {
@@ -112,10 +112,10 @@ SyntaxTreeNode *create_syntax_tree_node_string(char *name, size_t name_size, cha
 }
 
 SyntaxTreeNode *create_syntax_tree_node_bool(char *name, size_t name_size, bool value) {
-    SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
+    SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     node->kind = STNK_BOOLEAN;
-    node->value.boolean = value;
+    node->value.as_bool = value;
 
     if (name_size > 0) {
         char *null_terminated_name = malloc(name_size + 1);
@@ -130,16 +130,56 @@ SyntaxTreeNode *create_syntax_tree_node_bool(char *name, size_t name_size, bool 
     return node;
 }
 
-SyntaxTreeNode *create_syntax_tree_node_number(char *name, size_t name_size, char *data, size_t data_size) {
-    SyntaxTreeNode *node = malloc(sizeof(SyntaxTreeNode));
+SyntaxTreeNode *create_syntax_tree_node_float(char *name, size_t name_size, char *data, size_t data_size) {
+    SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
 
     char *null_terminated_data = malloc(data_size + 1);
     char* endptr;
 
     memcpy(null_terminated_data, data, data_size);
 
-    node->kind = STNK_NUMBER;
-    node->value.number = strtod(null_terminated_data, &endptr);
+    int precision = 0;
+    bool measuring = false;
+
+    for (size_t i = 0; i < data_size; ++i) {
+        if (measuring) {
+            ++precision;
+            continue;
+        }
+
+        if (null_terminated_data[i] == '.') {
+            measuring = true;
+        }
+    }
+
+    node->kind = STNK_FLOAT;
+    node->value.as_float = strtold(null_terminated_data, &endptr);
+    node->precision = precision;
+
+    free(null_terminated_data);
+
+    if (name_size > 0) {
+        char *null_terminated_name = malloc(name_size + 1);
+        memcpy(null_terminated_name, name, name_size);
+        
+        null_terminated_name[name_size] = '\0';
+        node->name = null_terminated_name;
+    } else {
+        node->name = NULL;
+    }
+
+    return node;
+}
+
+SyntaxTreeNode *create_syntax_tree_node_integer(char *name, size_t name_size, char *data, size_t data_size) {
+    SyntaxTreeNode *node = calloc(1, sizeof(SyntaxTreeNode));
+
+    char *null_terminated_data = malloc(data_size + 1);
+
+    memcpy(null_terminated_data, data, data_size);
+
+    node->kind = STNK_INTEGER;
+    node->value.as_integer = strtol(null_terminated_data, NULL, 10);
 
     free(null_terminated_data);
 
@@ -182,8 +222,13 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name
 
                 break;
             }
-            case NUMBER_CSON_TOKEN: {
-                node = create_syntax_tree_node_number(left->value, left->value_len, right->value, right->value_len);
+            case FLOAT_CSON_TOKEN: {
+                node = create_syntax_tree_node_float(left->value, left->value_len, right->value, right->value_len);
+
+                break;
+            }
+            case INTEGER_CSON_TOKEN: {
+                node = create_syntax_tree_node_integer(left->value, left->value_len, right->value, right->value_len);
 
                 break;
             }
@@ -217,7 +262,7 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name
                 exit(1);
         }
 
-        ll_add(object->value.object, node, 0);
+        ll_add(object->value.as_object, node, 0);
 
         Cson_Token *token = next_token(st);
 
@@ -254,8 +299,13 @@ SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_
 
                 break;
             }
-            case NUMBER_CSON_TOKEN: {
-                node = create_syntax_tree_node_number(NULL, 0, next->value, next->value_len);
+            case FLOAT_CSON_TOKEN: {
+                node = create_syntax_tree_node_float(NULL, 0, next->value, next->value_len);
+
+                break;
+            }
+            case INTEGER_CSON_TOKEN: {
+                node = create_syntax_tree_node_integer(NULL, 0, next->value, next->value_len);
 
                 break;
             }
@@ -289,7 +339,7 @@ SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_
                 exit(1);
         }
 
-        ll_add(array->value.array, node, 0);
+        ll_add(array->value.as_array, node, 0);
 
         Cson_Token *token = next_token(st);
 
@@ -340,10 +390,10 @@ void syntax_tree_free_list(SyntaxTreeNode *list) {
     
     switch (list->kind) {
         case STNK_ARRAY:
-            iter = ll_iter(list->value.array);
+            iter = ll_iter(list->value.as_array);
             break;
         case STNK_OBJECT:
-            iter = ll_iter(list->value.object);
+            iter = ll_iter(list->value.as_object);
             break;
         default:
             fprintf(stderr, "Unexpected kind when freeing memory\n");
@@ -357,14 +407,13 @@ void syntax_tree_free_list(SyntaxTreeNode *list) {
 
         switch (node->kind) {
             case STNK_BOOLEAN:
-                if (node->name != NULL) free(node->name);
-                break;
-            case STNK_NUMBER:
+            case STNK_FLOAT:
+            case STNK_INTEGER:
                 if (node->name != NULL) free(node->name);
                 break;
             case STNK_STRING:
                 if (node->name != NULL) free(node->name);
-                if (node->value.string != NULL) free(node->value.string);
+                if (node->value.as_string != NULL) free(node->value.as_string);
                 break;
             case STNK_OBJECT:
             case STNK_ARRAY:
@@ -377,10 +426,10 @@ void syntax_tree_free_list(SyntaxTreeNode *list) {
 
     switch (list->kind) {
         case STNK_ARRAY:
-            ll_free(list->value.array);
+            ll_free(list->value.as_array);
             break;
         case STNK_OBJECT:
-            ll_free(list->value.object);
+            ll_free(list->value.as_object);
             break;
         default:
             fprintf(stderr, "Unexpected kind when freeing memory\n");

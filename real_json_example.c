@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <time.h>
-#include "cson/include/cson.h"
+#include "./cson/include/cson.h"
 
 int main() {
     clock_t start, end;

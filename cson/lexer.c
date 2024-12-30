@@ -143,12 +143,16 @@ void save_number(Cson_Lexer* lexer_cson) {
         next(lexer_cson, 1);
     }
 
+    bool isFloating = false;
+
     if (nchr(lexer_cson) == '.') {
         next(lexer_cson, 1);
 
         while (is_digit(nchr(lexer_cson))) {
             next(lexer_cson, 1);
         }
+
+        isFloating = true;
     }
 
     if (nchr(lexer_cson) == '.') {
@@ -156,7 +160,11 @@ void save_number(Cson_Lexer* lexer_cson) {
         return;
     }
 
-    save_token(lexer_cson, NUMBER_CSON_TOKEN);
+    if (isFloating) {
+        save_token(lexer_cson, FLOAT_CSON_TOKEN);
+    } else {
+        save_token(lexer_cson, INTEGER_CSON_TOKEN);
+    }
 
     next(lexer_cson, 1);
 }

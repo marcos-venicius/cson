@@ -54,7 +54,6 @@ $ ./nested_stuff
 
 ## Next improvements
 
-- Make difference between floats and integers
 - Tokenize, lex and parse negative numbers
 - Unescape strings
 - Generate a libray from Cson

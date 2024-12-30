@@ -2,7 +2,7 @@
 #define CSON_COMMON_H_
 
 #include "./lexer.h"
-#include "st_parser.h"
+#include "./st_parser.h"
 
 const char* tk_kind_display(Cson_Token_Kind kind);
 void tk_display(const char *label, Cson_Token *token);
