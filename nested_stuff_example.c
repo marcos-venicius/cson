@@ -9,16 +9,14 @@ int main() {
         return 1;
     }
 
-    char* one;
+    CsonItem result;
 
-    int result;
-
-    if ((result = cson_read_string(cson, "one.two.three.[1].test.hello.[0]", &one)) != OK_RETURN) {
-        fprintf(stderr, "one: %s\n", error_explain(result));
+    if ((result = cson_get(cson->root, "%s%s%s%d%s%s%d", "one", "two", "three", 1, "test", "hello", 0)).return_code != CRC_OK) {
+        fprintf(stderr, "one: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("one: %s\n", one);
+    printf("one: %s\n", result.node->value.string);
 
     cson_free(cson);
 
