@@ -1,21 +1,45 @@
+#include "cson/include/common.h"
 #include "cson/include/cson.h"
 #include <stdio.h>
+#include <string.h>
+#include <time.h>
 
-int main() {
-    Cson *cson = cson_load("./examples/nested_stuff.json");
+void usage(FILE *stream, char *program_name) {
+    fprintf(stream, "Usage: %s <json-file> [OPTIONS]\n", program_name);
+    fprintf(stream, "    -p                print the syntax tree\n");
+    fprintf(stream, "    -g                get property value from json (not implemented yet)\n");
+    fprintf(stream, "\n");
+}
 
-    CsonItem item = cson_get(cson->root, "%s%s%s%d", "one", "two", "three", 0);
-
-    if (item.return_code != CRC_OK) {
-        fprintf(stderr, "error: %s\n", return_code_as_cstr(item.return_code));
-    } else {
-        printf("value: %f\n", item.node->value.number);
+int main(int argc, char **argv) {
+    if (argc < 2) {
+        usage(stderr, argv[0]);
+        return 1;
     }
 
-    CsonItem objectThree = cson_get(cson->root, "%s%s%s", "one", "two", "three");
-    CsonItem message = cson_get(objectThree.node, "%d%s%s%d", 1, "test", "hello", 0);
+    clock_t start, end;
 
-    printf("message: %s\n", cson_unwrap_string(message));
+    start = clock();
+
+    Cson *cson = cson_load(argv[1]);
+
+    if (cson == NULL) {
+        return 1;
+    }
+
+    end = clock();
+
+    if (argc >= 3 && strncmp("-p", argv[2], 2) == 0) {
+        stn_display(cson->root, 0, NULL);
+    } else if (argc >= 3 && strncmp("-g", argv[2], 2) == 0) {
+        usage(stderr, argv[0]);
+        cson_free(cson);
+        return 1;
+    }
 
     cson_free(cson);
+
+    printf("Time to parse: %fs\n", (double)(end - start) / (double)CLOCKS_PER_SEC);
+
+    return 0;
 }
