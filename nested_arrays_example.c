@@ -9,22 +9,23 @@ int main() {
         return 1;
     }
 
-    CsonItem result;
+    CsonItem one = cson_get(cson->root, "%d%d%d", 0, 0, 0);
 
-    if ((result = cson_get(cson->root, "%d%d%d", 0, 0, 0)).return_code != CRC_OK) {
-        fprintf(stderr, "one: %s\n", return_code_as_cstr(result.return_code));
+    if (one.return_code != CRC_OK) {
+        fprintf(stderr, "one: %s\n", return_code_as_cstr(one.return_code));
         return 1;
     }
 
-    printf("one: %s\n", result.node->value.string);
+    printf("one: %s\n", cson_unwrap_string(one));
 
-    if ((result = cson_get(cson->root, "%d%d", 0, 2)).return_code != CRC_OK) {
-        fprintf(stderr, "two: %s\n", return_code_as_cstr(result.return_code));
+    CsonItem two = cson_get(cson->root, "%d%d", 0, 2);
+
+    if (two.return_code != CRC_OK) {
+        fprintf(stderr, "two: %s\n", return_code_as_cstr(two.return_code));
         return 1;
     }
 
-    printf("two: %s\n", result.node->value.string);
-
+    printf("two: %s\n", two.node->value.string);
 
     cson_free(cson);
 

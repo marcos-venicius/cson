@@ -70,13 +70,14 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
         };
     }
 
-    CsonItem item = { .node = NULL };
+    CsonReturnCode return_code;
     bool parsing = true;
 
     if (strlen(format) % 2 != 0) {
-        item.return_code = CRC_INVALID_FORMAT;
-
-        return item;
+        return (CsonItem){
+            .return_code = CRC_INVALID_FORMAT,
+            .node = NULL
+        };
     }
 
     char *p;
@@ -89,7 +90,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
         switch (*p) {
             case '%':
                 if (!matchSymbol) {
-                    item.return_code = CRC_INVALID_FORMAT;
+                    return_code = CRC_INVALID_FORMAT;
                     parsing = false;
                 }
                 matchSymbol = false;
@@ -97,8 +98,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
             case 's':
                 matchSymbol = true;
                 if (current->kind != STNK_OBJECT) {
-                    item.node = NULL;
-                    item.return_code = CRC_INVALID_TYPE;
+                    return_code = CRC_INVALID_TYPE;
                     parsing = false;
 
                     break;
@@ -114,6 +114,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                         SyntaxTreeNode *node = iter_item.data;
 
                         if (strncmp(key, node->name, strlen(node->name)) == 0) {
+                            return_code = CRC_OK;
                             found = true;
                             current = node;
 
@@ -122,7 +123,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                     }
 
                     if (!found) {
-                        item.return_code = CRC_NOT_FOUND;
+                        return_code = CRC_NOT_FOUND;
                         parsing = false;
                     }
                 }
@@ -131,8 +132,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
             case 'd':
                 matchSymbol = true;
                 if (current->kind != STNK_ARRAY) {
-                    item.node = NULL;
-                    item.return_code = CRC_INVALID_TYPE;
+                    return_code = CRC_INVALID_TYPE;
                     parsing = false;
 
                     break;
@@ -140,18 +140,18 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                     size_t index = va_arg(ap, size_t);
 
                     if (index < 0 || index >= current->value.array->count) {
-                        item.node = NULL;
-                        item.return_code = CRC_INVALID_POS;
+                        return_code = CRC_INVALID_POS;
                         parsing = false;
 
                         break;
                     }
 
                     current = ll_find_by_index(current->value.array, index);
+                    return_code = CRC_OK;
                 }
                 break;
             default:
-                item.return_code = CRC_INVALID_FORMAT;
+                return_code = CRC_INVALID_FORMAT;
                 fprintf(stderr, "invalid formatting string '%c'. available only: %%s %%d\n", *p);
                 parsing = false;
                 break;
@@ -159,12 +159,29 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
     }
     va_end(ap);
 
-    if (parsing) {
-        item.node = current;
-        item.return_code = CRC_OK;
+    if (parsing && return_code == CRC_OK) {
+        return (CsonItem){
+            .return_code = return_code,
+            .node = current
+        };
     }
 
-    return item;
+    return (CsonItem){
+        .return_code = return_code,
+        .node = NULL
+    };
+}
+
+char *cson_unwrap_string(CsonItem item) {
+    return item.node->value.string;
+}
+
+bool cson_unwrap_boolean(CsonItem item) {
+    return item.node->value.boolean;    
+}
+
+double cson_unwrap_number(CsonItem item) {
+    return item.node->value.number;
 }
 
 void cson_free(Cson *cson) {

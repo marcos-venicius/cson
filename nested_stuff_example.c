@@ -9,14 +9,14 @@ int main() {
         return 1;
     }
 
-    CsonItem result;
+    CsonItem result = cson_get(cson->root, "%s%s%s%d%s%s%d", "one", "two", "three", 1, "test", "hello", 0);
 
-    if ((result = cson_get(cson->root, "%s%s%s%d%s%s%d", "one", "two", "three", 1, "test", "hello", 0)).return_code != CRC_OK) {
+    if (result.return_code != CRC_OK) {
         fprintf(stderr, "one: %s\n", return_code_as_cstr(result.return_code));
         return 1;
     }
 
-    printf("one: %s\n", result.node->value.string);
+    printf("one: %s\n", cson_unwrap_string(result));
 
     cson_free(cson);
 

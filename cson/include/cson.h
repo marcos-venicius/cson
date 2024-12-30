@@ -18,7 +18,7 @@ typedef struct {
 } Cson;
 
 typedef struct {
-    const SyntaxTreeNode *node;
+    const SyntaxTreeNode *const node;
     CsonReturnCode return_code;
 } CsonItem;
 
@@ -27,6 +27,10 @@ Cson *cson_load(const char *filepath);
 // Usage like: create_path(cson, "%s%s%d%s", "foo", "bar", 0, "bazz");
 // This will match: { foo: { bar: [ { bazz: 10 } ] } }
 CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...);
+
+char *cson_unwrap_string(CsonItem item);
+bool cson_unwrap_boolean(CsonItem item);
+double cson_unwrap_number(CsonItem item);
 
 const char* return_code_as_cstr(CsonReturnCode code);
 

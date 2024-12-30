@@ -15,7 +15,7 @@ int main() {
     CsonItem objectThree = cson_get(cson->root, "%s%s%s", "one", "two", "three");
     CsonItem message = cson_get(objectThree.node, "%d%s%s%d", 1, "test", "hello", 0);
 
-    printf("message: %s\n", message.node->value.string);
+    printf("message: %s\n", cson_unwrap_string(message));
 
     cson_free(cson);
 }
