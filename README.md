@@ -1,12 +1,12 @@
 # Cson
 
-_A simple and stupid JSON decoder in C_
+_A very simple JSON reader for C_
 
-![image](https://github.com/user-attachments/assets/b01b8aff-bc7b-4d1d-afe1-a3c922db81ca)
+![image](https://github.com/user-attachments/assets/fad4d955-82d0-4fb8-ab66-bb3a88bf262f)
 
 ## Implementing a new parser
 
-The new parser, parses the json a tree, making it easier to traver over the path specified by the user.
+The new parser, parses the json as a tree, making it easier to travel over the path specified by the user and prevent key conflicts.
 
 ![image](https://github.com/user-attachments/assets/de709f36-688f-40bd-b159-526011baf26b)
 
@@ -19,6 +19,13 @@ basic one:
 ```bash
 $ make basic
 $ ./basic
+```
+
+testing the new parser:
+
+```bash
+$ make st
+$ ./st
 ```
 
 nested_objects one:
@@ -45,115 +52,4 @@ $ ./nested_stuff
 ## Disclaimer
 
 > [!NOTE]
-> This is a working in progress. It's not ready for any kind of use.
-
-> [!WARNING]
-> We have some warnings in the compiler that needs some attention.
-
-## Next improvements
-
-- Possible bugs
-    - Add tests to the parser to check if it's working well
-- Better error reporting
-- Objects key naming conflicts with the internal way of storing the path until the object
-
-For instance:
-
-```json
-{
-    "a.b.c": 1,
-    "a": {
-        "b": {
-            "c": 2
-        }
-    }
-}
-```
-
-Will conflict, the first one will be returned.
-
-## Idea of implementation to support nested objects
-
-I'll have an array of size `n`.
-`n` will be the estimated amount of tokens (it's based on the amount of `COLON_CSON_TOKEN` in the json file).
-
-Every time the parser encounter a `{`, this will add a new prefix, that is the key to this object and a `.`.
-
-For example, imagine we have:
-
-```json
-{
-    "testing": {
-        "other_keys": "hello",
-        "nested": {
-            "hey": "Hi"
-        }
-    }
-}
-```
-
-The key to the `testing -> nested -> hey` will be `testing.nested.hey`.
-
-So, the user can just pass this key `testing.nested.hey` and grab the `hey` key as `string` in the json.
-
-## Idea of implementation to support arrays
-
-The idea is similar to the idea of nested objects, the difference is that to each item in the array, the prefix will be `[<index>]`.
-
-Everything will be saved in a contiguous array in memory, and the search for any key will be `O(n)`, `n` being the amount of keys in the whole json.
-
-**Terrible, but, I think it will work**
-
-## Syntax Tree implementation example
-
-```console
-SyntaxTree {
-    root = SyntaxTreeNode {
-        kind = OBJECT,
-        value = SyntaxTreeNodeValue {
-            object = [
-                SyntaxTreeNode {
-                    name = "nome",
-                    kind = NUMBER,
-                    value = SyntaxTreeNodeValue {
-                        number = 1
-                    }
-                },
-                SyntaxTreeNode {
-                    name = "test",
-                    kind = ARRAY,
-                    value = SyntaxTreeNodeValue {
-                        array = [
-                            SyntaxTreeNode {
-                                kind = NUMBER,
-                                value = SyntaxTreeNodeValue {
-                                    number = 1
-                                }
-                            },
-                            SyntaxTreeNode {
-                                kind = NUMBER,
-                                value = SyntaxTreeNodeValue {
-                                    number = 2
-                                }
-                            },
-                            SyntaxTreeNode = {
-                                kind = OBJECT,
-                                value = SyntaxTreeNodeValue {
-                                    object = [
-                                        SyntaxTreeNode {
-                                            kind = NUMBER,
-                                            value = SyntaxTreeNodeValue {
-                                                number = 23
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
-                    }
-                }
-            ]
-        }
-    }
-}
-```
+> This is a working in progress. It's not ready yet for any kind of use.
