@@ -244,6 +244,10 @@ SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_
 
         Cson_Token *next = next_token(st);
 
+        if (next->kind == RSQUARE_CSON_TOKEN) {
+            break;
+        }
+
         switch (next->kind) {
             case STRING_CSON_TOKEN: {
                 node = create_syntax_tree_node_string(NULL, 0, next->value, next->value_len);
