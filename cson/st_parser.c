@@ -1,18 +1,85 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "./include/st_parser.h"
-#include "./include/common.h"
 #include "./include/lexer.h"
 #include "./libs/ll.h"
 
+static Cson_Lexer *g_lexer;
+static Cson_Token *current_token;
+
 SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_size);
 SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name_size);
+
+static void error_message(const char *const error, int padding, const char *const description, ...) {
+    va_list args;
+    va_start(args, description);
+
+    int start_context = 0;
+    int end_context = 0;
+
+    char *line = g_lexer->content + current_token->bot;
+
+    while (start_context < 50 && start_context < current_token->col) {
+        if (*line == '\n') {
+            ++line;
+            --start_context;
+            break;
+        }
+
+        ++start_context;
+
+        --line;
+    }
+
+    line = line + start_context;
+
+    while (end_context < 50 && current_token->bot + end_context < g_lexer->content_len) {
+        if (*line == '\n') {
+            --line;
+            --end_context;
+            break;
+        }
+
+        ++end_context;
+
+        ++line;
+    }
+
+    line = line - end_context - start_context + 1;
+    int line_size = end_context + start_context;
+
+    int col = current_token->col - g_lexer->cursor + g_lexer->bot + padding;
+
+    fprintf(stderr, "%s:%d:%d %s\n\n", g_lexer->filename, current_token->line, col, error);
+    fprintf(stderr, "%.*s\n", line_size, line);
+    if (current_token->kind == STRING_CSON_TOKEN) {
+        fprintf(stderr, "%*.s", start_context, "");
+    } else {
+        fprintf(stderr, "%*.s", start_context - 1, "");
+    }
+    for (int i = 0; i < current_token->value_len; ++i) {
+        fprintf(stderr, "~");
+    }
+    fprintf(stderr, "\n");
+    if (current_token->kind == STRING_CSON_TOKEN) {
+        fprintf(stderr, "%*.s", start_context + padding, "");
+    } else {
+        fprintf(stderr, "%*.s", start_context + padding - 1, "");
+    }
+    vfprintf(stderr, description, args);
+    fprintf(stderr, "\n");
+
+    va_end(args);
+}
 
 static Cson_Token *next_token(SyntaxTree *st) {
     if (st->token->kind == EOF_CSON_TOKEN) return NULL;
 
     st->token = st->token->next;
+
+    current_token = st->token;
 
     return st->token;
 }
@@ -48,7 +115,7 @@ static char* unescape_sequence(char* string) {
                     unescaped[scape_i] = '\f';
                     break;
                 default:
-                    fprintf(stderr, "invalid escape string \"%c%c\"\n", string[string_i], string[string_i + 1]);
+                    error_message("invalid scape string", string_i + 1, "\"\\%c\" is not a valid escape sequence", string[string_i + 1]);
                     exit(1);
             }
             string_i++;
@@ -66,7 +133,7 @@ static char* unescape_sequence(char* string) {
 
 Cson_Token *expect(Cson_Token *token, Cson_Token_Kind kind) {
     if (token == NULL || token->kind != kind) {
-        fprintf(stderr, "unexpected token \"%s\"\n", tk_kind_display(token->kind));
+        error_message("unexpected token", 0, "the token \"%.*s\" was not expected", token->value_len, token->value);
         exit(1);
     }
 
@@ -74,6 +141,8 @@ Cson_Token *expect(Cson_Token *token, Cson_Token_Kind kind) {
 }
 
 SyntaxTree *init_syntax_tree_parser(Cson_Lexer *lexer) {
+    g_lexer = lexer;
+
     SyntaxTree *syntaxTree = calloc(1, sizeof(SyntaxTree));
 
     if (syntaxTree == NULL) {
@@ -305,7 +374,7 @@ SyntaxTreeNode *syntax_tree_parse_object(SyntaxTree *st, char *name, size_t name
                 break;
             }
             default:
-                fprintf(stderr, "unexpected token \"%s\"", tk_kind_display(right->kind));
+                error_message("unexpected token", 0, "the token \"%.*s\" was not expected", right->value_len, right->value);
                 exit(1);
         }
 
@@ -382,7 +451,7 @@ SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_
                 break;
             }
             default:
-                fprintf(stderr, "unexpected token \"%s\"", tk_kind_display(next->kind));
+                error_message("unexpected token", 0, "the token \"%.*s\" was not expected", next->value_len, next->value);
                 exit(1);
         }
 
@@ -406,6 +475,8 @@ SyntaxTreeNode *syntax_tree_parse_array(SyntaxTree *st, char *name, size_t name_
 void syntax_tree_parse(SyntaxTree *st) {
     Cson_Token *token = st->token;
 
+    current_token = token;
+
     SyntaxTreeNode *node;
 
     switch (token->kind) {
@@ -420,8 +491,7 @@ void syntax_tree_parse(SyntaxTree *st) {
         case RSQUARE_CSON_TOKEN:
             return;
         default:
-            // TODO: improve error handling    
-            fprintf(stderr, "invalid token: \"%s\"\n", tk_kind_display(token->kind));
+            error_message("malformed json", 0, "the syntax is invalid. The token \"%.*s\" was not expected", token->value_len, token->value);
             exit(1);
     }
 

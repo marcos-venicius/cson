@@ -34,6 +34,7 @@ struct Cson_Token {
 	Cson_Token_Kind kind;
 	char* value;
 	int value_len;
+	int line, col, bot;
 	Cson_Token* next;
 };
 

@@ -6,7 +6,10 @@
 #include "./include/lexer.h"
 #include "include/common.h"
 
-void error_message(Cson_Lexer *lexer, const char *const error, const char *const description, ...) {
+static int line = 1;
+static int col = 1;
+
+static void error_message(Cson_Lexer *lexer, const char *const error, const char *const description, ...) {
     va_list args;
     va_start(args, description);
 
@@ -119,6 +122,9 @@ int save_token_chunk(Cson_Lexer* lexer_cson, const Cson_Token_Kind kind, const i
     token->value = &lexer_cson->content[from];
     token->value_len = to;
     token->next = NULL;
+    token->line = line;
+    token->col = col;
+    token->bot = lexer_cson->bot;
 
     if (lexer_cson->tail == NULL) {
         lexer_cson->root = token;
@@ -152,20 +158,7 @@ void save_string(Cson_Lexer* lexer_cson) {
 
     while (chr(lexer_cson) != '"') {
         if (chr(lexer_cson) == '\\')  {
-            switch (nchr(lexer_cson)) {
-                case '"':
-                case '\\':
-                case 'n':
-                case 't':
-                case 'b':
-                case 'r':
-                case 'f':
-                    next(lexer_cson, 1);
-                    break;
-                default:
-                    error_message(lexer_cson, "invalid escape string", "\"\\%c\" is not a valid scape string", nchr(lexer_cson));
-                    exit(1);
-            }
+            next(lexer_cson, 1);
         }
 
         next(lexer_cson, 1);
@@ -235,6 +228,9 @@ void tokenize(Cson_Lexer* lexer_cson) {
             save_token(lexer_cson, EOF_CSON_TOKEN);
             break;
         }
+
+        line = lexer_cson->line;
+        col = lexer_cson->col;
 
         switch (c) {
             case '{': save_token_advance(lexer_cson, LBRACE_CSON_TOKEN); break;
