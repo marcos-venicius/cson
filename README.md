@@ -8,7 +8,7 @@ _A very simple JSON reader for C_
 
 **Better syntax error reporting**
 
-![image](https://github.com/user-attachments/assets/278b00ec-6f61-423c-b5bd-18de82f73be4)
+![image](https://github.com/user-attachments/assets/c4a7e396-65e2-4efa-b877-5c3360c8cf47)
 
 ## Implementing a new parser
 
