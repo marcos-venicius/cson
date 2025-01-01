@@ -59,7 +59,6 @@ $ ./nested_stuff
 
 - Better error reporting at parser level
 - Fix the formatter scaping strings
-- Tokenize, lex and parse negative numbers
 - Generate a libray from Cson
 
 ## Next steps

@@ -8,8 +8,11 @@
 
 static int line = 1;
 static int col = 1;
+static int errors = 0;
 
 static void error_message(Cson_Lexer *lexer, const char *const error, const char *const description, ...) {
+    ++errors;
+
     va_list args;
     va_start(args, description);
 
@@ -29,12 +32,16 @@ static void error_message(Cson_Lexer *lexer, const char *const error, const char
     int beginning_of_the_token = lexer->cursor - lexer->bot - lexer->col + 1;
     int col = lexer->col - lexer->cursor + lexer->bot;
 
-    fprintf(stderr, "%s:%d:%d %s\n\n", lexer->filename, lexer->line, col, error);
-    fprintf(stderr, "%.*s\n", lexer->col + context_size, line);
-    fprintf(stderr, "%*.s^\n", beginning_of_the_token, "");
-    fprintf(stderr, "%*.s", beginning_of_the_token, "");
+    char line_number[12];
+
+    int line_number_length = snprintf(line_number, 12, "%d", lexer->line);
+
+    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m %s\n", lexer->filename, lexer->line, col, error);
+    fprintf(stderr, "  %s |    %.*s\n", line_number, lexer->col + context_size, line);
+    fprintf(stderr, "  %*.s |    %*.s\033[1;35m^\033[0m\n", line_number_length, "", beginning_of_the_token, "");
+    fprintf(stderr, "  %*.s |    %*.s", line_number_length, "", beginning_of_the_token, "");
     vfprintf(stderr, description, args);
-    fprintf(stderr, "\n");
+    fprintf(stderr, "\n\n");
 
     va_end(args);
 }
@@ -174,13 +181,25 @@ void save_string(Cson_Lexer* lexer_cson) {
 }
 
 void save_number(Cson_Lexer* lexer_cson) {
+    int digits = 0;
+
+    if (is_digit(chr(lexer_cson))) {
+        ++digits;
+    }
+
     while (is_digit(nchr(lexer_cson))) {
+        ++digits;
         next(lexer_cson, 1);
     }
 
     bool isFloating = false;
 
+    if (digits == 0) {
+        error_message(lexer_cson, "invalid number", "this is not a valid negative number");
+    }
+
     if (nchr(lexer_cson) == '.') {
+
         next(lexer_cson, 1);
 
         while (is_digit(nchr(lexer_cson))) {
@@ -212,7 +231,6 @@ void save_symbol(Cson_Lexer* lexer_cson) {
         save_token(lexer_cson, NULL_CSON_TOKEN);
     } else {
         error_message(lexer_cson, "invalid symbol", "\"%.*s\" is not a valid symbol", lexer_cson->cursor - lexer_cson->bot + 1, lexer_cson->content + lexer_cson->bot);
-        exit(1);
     }
 
     next(lexer_cson, 1);
@@ -242,7 +260,7 @@ void tokenize(Cson_Lexer* lexer_cson) {
             case '0': case '1': case '2':
             case '3': case '4': case '5':
             case '6': case '7': case '8':
-            case '9': save_number(lexer_cson); break;
+            case '9': case '-': save_number(lexer_cson); break;
             case '"': save_string(lexer_cson); break;
             case 'a'...'z':
             case 'A'...'Z':
@@ -252,8 +270,11 @@ void tokenize(Cson_Lexer* lexer_cson) {
             default:
                 lexer_cson->has_error = true;
                 error_message(lexer_cson, "unrecognized character", "unrecognized character '%c'", c);
-                exit(1);
         }
+    }
+
+    if (errors > 0) {
+        exit(1);
     }
 }
 
