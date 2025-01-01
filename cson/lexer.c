@@ -10,6 +10,11 @@ static int line = 1;
 static int col = 1;
 static int errors = 0;
 
+#define ColorBoldRed(t) "\033[1;31m"t"\033[0m"
+#define ColorGreen(t) "\033[0;32m"t"\033[0m"
+#define ColorBoldGreen(t) "\033[1;32m"t"\033[0m"
+#define ColorBoldPurple(t) "\033[1;35m"t"\033[0m"
+
 static void error_message(Cson_Lexer *lexer, const char *const error, const char *const description, ...) {
     ++errors;
 
@@ -36,12 +41,16 @@ static void error_message(Cson_Lexer *lexer, const char *const error, const char
 
     int line_number_length = snprintf(line_number, 12, "%d", lexer->line);
 
-    fprintf(stderr, "%s:%d:%d: \033[1;31merror\033[0m %s\n", lexer->filename, lexer->line, col, error);
+    fprintf(stderr, "%s:%d:%d: "ColorBoldRed("error")" %s\n", lexer->filename, lexer->line, col, error);
     fprintf(stderr, "  %s |    %.*s\n", line_number, lexer->col + context_size, line);
-    fprintf(stderr, "  %*.s |    %*.s\033[1;35m^\033[0m\n", line_number_length, "", beginning_of_the_token, "");
-    fprintf(stderr, "  %*.s |    %*.s", line_number_length, "", beginning_of_the_token, "");
-    vfprintf(stderr, description, args);
-    fprintf(stderr, "\n\n");
+    fprintf(stderr, "  %*.s |    %*.s"ColorBoldPurple("^")"\n", line_number_length, "", beginning_of_the_token, "");
+    if (description != NULL) {
+        fprintf(stderr, "  %*.s |    %*.s", line_number_length, "", beginning_of_the_token, "");
+        vfprintf(stderr, description, args);
+        fprintf(stderr, "\n\n");
+    } else {
+        fprintf(stderr, "\n");
+    }
 
     va_end(args);
 }
@@ -163,12 +172,20 @@ void save_token_advance(Cson_Lexer* lexer_cson, const Cson_Token_Kind kind) {
 void save_string(Cson_Lexer* lexer_cson) {
     next(lexer_cson, 1);
 
-    while (chr(lexer_cson) != '"') {
-        if (chr(lexer_cson) == '\\')  {
-            next(lexer_cson, 1);
+    bool error = false;
+
+    while (chr(lexer_cson) != '"' && !error) {
+        switch (chr(lexer_cson)) {
+            case '\\': {
+                next(lexer_cson, 1);
+            } break;
+            case '\n': {
+                error_message(lexer_cson, "unterminated string", NULL);
+                error = true;
+            } break;
         }
 
-        next(lexer_cson, 1);
+        if (!error) next(lexer_cson, 1);
     }
 
     save_token_chunk(
@@ -198,7 +215,7 @@ void save_number(Cson_Lexer* lexer_cson) {
         error_message(lexer_cson, "invalid number", "this is not a valid negative number");
     }
 
-    if (nchr(lexer_cson) == '.') {
+    if (nchr(lexer_cson) == '.' && digits > 0) {
 
         next(lexer_cson, 1);
 
@@ -230,7 +247,7 @@ void save_symbol(Cson_Lexer* lexer_cson) {
     } else if (strncmp(&lexer_cson->content[lexer_cson->bot], "null", 4) == 0) {
         save_token(lexer_cson, NULL_CSON_TOKEN);
     } else {
-        error_message(lexer_cson, "invalid symbol", "\"%.*s\" is not a valid symbol", lexer_cson->cursor - lexer_cson->bot + 1, lexer_cson->content + lexer_cson->bot);
+        error_message(lexer_cson, "invalid symbol", ""ColorBoldPurple("%.*s")" is not a valid symbol", lexer_cson->cursor - lexer_cson->bot + 1, lexer_cson->content + lexer_cson->bot);
     }
 
     next(lexer_cson, 1);
