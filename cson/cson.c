@@ -295,6 +295,118 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
     }
 }
 
+void minify_json(FILE *stream, SyntaxTreeNode *node, bool is_last) {
+    switch (node->kind) {
+        case STNK_OBJECT: {
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":{", node->name);
+            } else {
+                fprintf(stream, "{");
+            }
+
+            if (node->value.as_object->count > 0) {
+                LLIter iter = ll_iter(node->value.as_object);
+
+                while (ll_iter_has(&iter)) {
+                    LLIterItem item = ll_iter_consume(&iter);
+                    SyntaxTreeNode *child = item.data;
+
+                    minify_json(stream, child, item.index == node->value.as_object->count - 1);
+                }
+
+                fprintf(stream, "}");
+            } else {
+                fprintf(stream, "}");
+            }
+
+            if (!is_last) {
+                fprintf(stream, ",");
+            }
+
+            break;
+        }
+        case STNK_ARRAY: {
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":[", node->name);
+            } else {
+                fprintf(stream, "[");
+            }
+
+            if (node->value.as_array->count > 0) {
+                LLIter iter = ll_iter(node->value.as_object);
+
+                while (ll_iter_has(&iter)) {
+                    LLIterItem item = ll_iter_consume(&iter);
+                    SyntaxTreeNode *child = item.data;
+
+                    minify_json(stream, child, item.index == node->value.as_object->count - 1);
+                }
+
+                fprintf(stream, "]");
+            } else {
+                fprintf(stream, "]");
+            }
+
+            if (!is_last) {
+                fprintf(stream, ",");
+            }
+
+            break;
+        }
+        case STNK_STRING:
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":\"%s\"", node->name, node->value.as_string);
+            } else {
+                fprintf(stream, "\"%s\"", node->value.as_string);
+            }
+
+            if (!is_last) {
+                fprintf(stream, ",");
+            }
+
+            break;
+        case STNK_FLOAT:
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":%.*Lf", node->name, node->precision, node->value.as_float);
+            } else {
+                fprintf(stream, "%.*Lf", node->precision, node->value.as_float);
+            }
+
+            if (!is_last) {
+                fprintf(stream, ",");
+            }
+
+            break;
+        case STNK_INTEGER:
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":%ld", node->name, node->value.as_integer);
+            } else {
+                fprintf(stream, "%ld", node->value.as_integer);
+            }
+
+            if (!is_last) {
+               fprintf(stream, ",");
+            }
+
+            break;
+        case STNK_BOOLEAN:
+            if (node->name != NULL) {
+                fprintf(stream, "\"%s\":%s", node->name, node->value.as_bool ? "true" : "false");
+            } else {
+                fprintf(stream, "%s", node->value.as_bool ? "true" : "false");
+            }
+
+            if (!is_last) {
+                fprintf(stream, ",");
+            }
+
+            break;
+        default:
+            fprintf(stderr, "error: print not implemented for \"%s\"\n", stnk_display(node->kind));
+            break;
+    }
+}
+
 void cson_format(Cson *cson, unsigned int padding) {
     print_json(cson->root, padding, 0, true);
 }

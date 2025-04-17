@@ -3,6 +3,7 @@
 
 #include "./lexer.h"
 #include "./st_parser.h"
+#include <stdio.h>
 
 typedef enum {
     CRC_NOT_FOUND = 404,
@@ -28,6 +29,7 @@ Cson *cson_load(const char *filepath);
 // This will match: { foo: { bar: [ { bazz: 10 } ] } }
 CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...);
 void cson_format(Cson *cson, unsigned int padding);
+void minify_json(FILE *stream, SyntaxTreeNode *node, bool is_last);
 
 char *cson_unwrap_string(CsonItem item);
 bool cson_unwrap_boolean(CsonItem item);
