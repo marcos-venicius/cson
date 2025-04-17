@@ -1,5 +1,6 @@
 #include "./include/cson.h"
 #include "./include/lexer.h"
+#include "./include/utils.h"
 #include "./include/io.h"
 #include "./include/common.h"
 #include "./include/st_parser.h"
@@ -123,7 +124,7 @@ CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
                 } else {
                     size_t index = va_arg(ap, size_t);
 
-                    if (index < 0 || index >= current->value.as_array->count) {
+                    if (index >= current->value.as_array->count) {
                         return_code = CRC_INVALID_POS;
                         parsing = false;
 
@@ -355,9 +356,24 @@ void minify_json(FILE *stream, SyntaxTreeNode *node, bool is_last) {
         }
         case STNK_STRING:
             if (node->name != NULL) {
-                fprintf(stream, "\"%s\":\"%s\"", node->name, node->value.as_string);
+                char *string_value = scape_sequence(node->value.as_string);
+
+                if (string_value == NULL) {
+                    fprintf(stream, "\"%s\":null", node->name);
+                } else {
+                    fprintf(stream, "\"%s\":\"%s\"", node->name, string_value);
+
+                    free(string_value);
+                }
             } else {
-                fprintf(stream, "\"%s\"", node->value.as_string);
+                char *string_value = scape_sequence(node->value.as_string);
+                
+                if (string_value == NULL) {
+                    fprintf(stream, "null");
+                } else {
+                    fprintf(stream, "\"%s\"", string_value);
+                    free(string_value);
+                }
             }
 
             if (!is_last) {
