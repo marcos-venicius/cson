@@ -16,6 +16,13 @@ The new parser, parses the json as a tree, making it easier to travel over the p
 
 ![image](https://github.com/user-attachments/assets/de709f36-688f-40bd-b159-526011baf26b)
 
+## Minifying json
+
+```bash
+$ make minify
+$ ./minify ./input.json output.json
+```
+
 ## Testing
 
 **We have some examples to you:**
