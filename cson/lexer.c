@@ -4,7 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "./include/lexer.h"
-#include "include/common.h"
+#include "./include/common.h"
 
 static int line = 1;
 static int col = 1;

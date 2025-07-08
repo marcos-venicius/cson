@@ -1,12 +1,12 @@
 CXX = gcc
 CXX_FLAGS = -Wall -Wextra -pedantic
 DEBUG_FLAGS = -g -DDEBUG
-EXE_NAME = csonf
+EXE_NAME = bin/csonf
 
 $(EXE_NAME): csonf.o cson/cson.o cson/libs/ll.o cson/io.o cson/utils.o cson/lexer.o cson/st_parser.o cson/common.o
 	$(CXX) $(CXX_FLAGS) -o $(EXE_NAME) $^
 
-csonf.o: csonf.c cson/include/cson.h
+csonf.o: csonf.c cson/include/cson.h cson/include/utils.h
 	$(CXX) $(CXX_FLAGS) -c csonf.c -o csonf.o
 
 cson.o: cson/cson.c cson/include/cson.h cson/include/lexer.h cson/include/st_parser.h cson/include/utils.h cson/include/io.h cson/include/common.h cson/libs/assertf.h cson/libs/ll.h
@@ -31,4 +31,4 @@ common.o: cson/common.c cson/include/common.h cson/include/lexer.h cson/include/
 	$(CXX) $(CXX_FLAGS) -o common.o cson/common.c
 
 clean:
-	rm -rf `find . -type f -name "*.o"`
+	rm -rf $(EXE_NAME) `find . -type f -name "*.o"`

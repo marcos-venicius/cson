@@ -64,3 +64,12 @@ char* scape_sequence(char* string) {
 
     return scaped;
 }
+
+bool cmp_sized_string(const char *a, const char *b, size_t as, size_t bs)
+{
+    if (as != bs) return false;
+
+    for (size_t i = 0; i < as; ++i) if (a[i] != b[i]) return false;
+
+    return true;
+}
