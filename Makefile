@@ -1,69 +1,34 @@
 CXX = gcc
-CXXFLAGS = -Wall -Wextra
+CXX_FLAGS = -Wall -Wextra -pedantic
 DEBUG_FLAGS = -g -DDEBUG
+EXE_NAME = csonf
 
-SRC = $(wildcard cson/*.c)
-SRC += $(wildcard cson/libs/*.c)
-OBJ = $(SRC:.c=.o)
+$(EXE_NAME): csonf.o cson/cson.o cson/libs/ll.o cson/io.o cson/utils.o cson/lexer.o cson/st_parser.o cson/common.o
+	$(CXX) $(CXX_FLAGS) -o $(EXE_NAME) $^
 
-BASIC_OBJ = basic_example.o $(OBJ)
-BASIC_TARGET = basic
+csonf.o: csonf.c cson/include/cson.h
+	$(CXX) $(CXX_FLAGS) -c csonf.c -o csonf.o
 
-ST_OBJ = st_example.o $(OBJ)
-ST_TARGET = st
+cson.o: cson/cson.c cson/include/cson.h cson/include/lexer.h cson/include/st_parser.h cson/include/utils.h cson/include/io.h cson/include/common.h cson/libs/assertf.h cson/libs/ll.h
+	$(CXX) $(CXX_FLAGS) -o cson.o -c cson/cson.c
 
-MINIFY_OBJ = minify.o $(OBJ)
-MINIFY_TARGET = minify 
+ll.o: cson/libs/ll.c cson/libs/ll.h cson/libs/assertf.h
+	$(CXX) $(CXX_FLAGS) -o ll.o -c cson/libs/ll.c
 
-PARSE_CLIENTS_OBJ = parse_clients.o $(OBJ)
-PARSE_CLIENTS_TARGET = parse_clients
+io.o: cson/io.c cson/include/io.h
+	$(CXX) $(CXX_FLAGS) -o io.o cson/io.c
 
-NESTED_OBJECTS_OBJ = nested_objects_example.o $(OBJ)
-NESTED_OBJECTS_TARGET = nested_objects
+utils.o: cson/utils.c cson/include/utils.h
+	$(CXX) $(CXX_FLAGS) -o utils.o cson/utils.c
 
-NESTED_ARRAYS_OBJ = nested_arrays_example.o $(OBJ)
-NESTED_ARRAYS_TARGET = nested_arrays
+lexer.o: cson/lexer.c cson/include/lexer.h cson/include/common.h
+	$(CXX) $(CXX_FLAGS) -o lexer.o cson/lexer.c
 
-NESTED_STUFF_OBJ = nested_stuff_example.o $(OBJ)
-NESTED_STUFF_TARGET = nested_stuff
+st_parser.o: cson/st_parser.c cson/include/st_parser.h cson/include/lexer.h cson/libs/ll.h
+	$(CXX) $(CXX_FLAGS) -o st_parser.o cson/st_parser.c
 
-REAL_JSON_OBJ = real_json_example.o $(OBJ)
-REAL_JSON_TARGET = real_json
-
-ifeq ($(DEBUG), 1)
-	CXXFLAGS += $(DEBUG_FLAGS)
-endif
-
-ifeq ($(SANITIZE), 1)
-	CXXFLAGS += -fsanitize=address
-endif
-
-$(ST_TARGET): $(ST_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(MINIFY_TARGET): $(MINIFY_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(PARSE_CLIENTS_TARGET): $(PARSE_CLIENTS_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(BASIC_TARGET): $(BASIC_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(NESTED_OBJECTS_TARGET): $(NESTED_OBJECTS_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(NESTED_ARRAYS_TARGET): $(NESTED_ARRAYS_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(NESTED_STUFF_TARGET): $(NESTED_STUFF_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(REAL_JSON_TARGET): $(REAL_JSON_OBJ)
-	$(CXX) $(CXXFLAGS) -o $@ $^
-
-%.o: %.c
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+common.o: cson/common.c cson/include/common.h cson/include/lexer.h cson/include/st_parser.h cson/libs/ll.h
+	$(CXX) $(CXX_FLAGS) -o common.o cson/common.c
 
 clean:
-	rm -rf $(MINIFY_OBJ) $(MINIFY_TARGET) $(PARSE_CLIENTS_OBJ) $(PARSE_CLIENTS_TARGET) $(ST_OBJ)  $(ST_TARGET) $(BASIC_OBJ)  $(BASIC_TARGET) $(NESTED_OBJECTS_OBJ) $(NESTED_OBJECTS_TARGET) $(NESTED_ARRAYS_OBJ) $(NESTED_ARRAYS_TARGET) $(NESTED_STUFF_OBJ) $(NESTED_STUFF_TARGET) $(REAL_JSON_OBJ) $(REAL_JSON_TARGET)
+	rm -rf `find . -type f -name "*.o"`
