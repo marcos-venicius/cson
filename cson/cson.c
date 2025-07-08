@@ -240,9 +240,17 @@ static void print_json(SyntaxTreeNode *node, unsigned int padding, unsigned int 
         }
         case STNK_STRING:
             if (node->name != NULL) {
-                fprintf(stdout, "%*s\"%s\": \"%s\"", shift, "", node->name, node->value.as_string);
+                char *scaped = scape_sequence(node->value.as_string);
+
+                fprintf(stdout, "%*s\"%s\": \"%s\"", shift, "", node->name, scaped);
+
+                free(scaped);
             } else {
-                fprintf(stdout, "%*s\"%s\"", shift, "", node->value.as_string);
+                char *scaped = scape_sequence(node->value.as_string);
+
+                fprintf(stdout, "%*s\"%s\"", shift, "", scaped);
+
+                free(scaped);
             }
 
             if (is_last) {

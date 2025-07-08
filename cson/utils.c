@@ -50,7 +50,7 @@ char* scape_sequence(char* string) {
                 scaped[scape_i++] = '\\';
                 scaped[scape_i++] = 'f';
                 break;
-            case '\"':
+            case '"':
                 scaped[scape_i++] = '\\';
                 scaped[scape_i++] = '"';
                 break;

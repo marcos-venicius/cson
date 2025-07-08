@@ -2,3 +2,4 @@
 .idea
 debug
 minify
+bin/*
