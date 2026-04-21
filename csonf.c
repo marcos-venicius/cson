@@ -1,16 +1,18 @@
 #include "./cson/include/cson.h"
 #include "./cson/include/utils.h"
+#include "cson/include/io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 void usage(FILE *stream, const char *program_name, const char *error) {
-    fprintf(stream, "Usage: %s [minify|format] <input-file> [flags]\n", program_name);
+    fprintf(stream, "Usage: %s [minify|format] [input-file] [flags]\n", program_name);
     fprintf(stream, "\n");
     fprintf(stream, "  minify\n");
     fprintf(stream, "    -o        output file (optional) when omitted, output to the stdout\n");
     fprintf(stream, "  format\n");
     fprintf(stream, "    -t        amount of spaces as tab (optional) (default is 2)\n");
+    fprintf(stream, "You can also provide the input via stdin so you don't need to have a file\n");
 
     if (error != NULL) {
         fprintf(stream, "\nerror: %s\n", error);
@@ -30,7 +32,7 @@ typedef enum {
     C_FORMAT
 } Command;
 
-int minify_command(const char *program_name, const char *input_filepath, int argc, char **argv) {
+int minify_command(const char *program_name, const char *input_filepath, char *content, size_t content_size, int argc, char **argv) {
     char *flag = shift(&argc, &argv);
     char *output_filepath = NULL;
 
@@ -50,7 +52,10 @@ int minify_command(const char *program_name, const char *input_filepath, int arg
         }
     }
 
-    Cson *cson = cson_load(input_filepath);
+    Cson *cson;
+
+    if (content == NULL) cson = cson_load(input_filepath);
+    else cson = cson_load_from_content(content, content_size);
 
     if (cson == NULL) return 1;
 
@@ -67,7 +72,7 @@ int minify_command(const char *program_name, const char *input_filepath, int arg
     return 0;
 }
 
-int format_command(const char *program_name, const char *input_filepath, int argc, char **argv) {
+int format_command(const char *program_name, const char *input_filepath, char *content, size_t content_size, int argc, char **argv) {
     const char *flag = shift(&argc, &argv);
     size_t tab_size = 2;
 
@@ -95,7 +100,10 @@ int format_command(const char *program_name, const char *input_filepath, int arg
         return 1;
     }
 
-    Cson *cson = cson_load(input_filepath);
+    Cson *cson;
+
+    if (content == NULL) cson = cson_load(input_filepath);
+    else cson = cson_load_from_content(content, content_size);
 
     if (cson == NULL) return 1;
 
@@ -129,14 +137,20 @@ int main(int argc, char **argv) {
     }
 
     char *input_filepath = shift(&argc, &argv);
+    char *content = NULL;
+    size_t content_size = 0;
 
     if (input_filepath == NULL) {
-        usage(stderr, program_name, "please specify the path to the json file");
-        return 1;
+        content_size = read_from_stdin(&content);
+
+        if (content_size == 0) {
+            usage(stderr, program_name, "please specify the path to the json file or pipe data via stdin");
+            return 1;
+        }
     }
 
     switch (command) {
-        case C_MINIFY: return minify_command(program_name, input_filepath, argc, argv);
-        case C_FORMAT: return format_command(program_name, input_filepath, argc, argv);
+        case C_MINIFY: return minify_command(program_name, input_filepath, content, content_size, argc, argv);
+        case C_FORMAT: return format_command(program_name, input_filepath, content, content_size, argc, argv);
     }
 }

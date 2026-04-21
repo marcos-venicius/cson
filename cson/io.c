@@ -39,3 +39,26 @@ unsigned long read_file_content(const char* filename, char** output) {
 
     return read_size;
 }
+
+unsigned long read_from_stdin(char **content) {
+    char *line = NULL;
+    unsigned long len;
+    unsigned long read_size = 0;
+    unsigned long content_length = 0;
+    char *buffer = NULL;
+
+    while ((read_size = getline(&line, &len, stdin)) != -1) {
+        unsigned long previous_length = content_length;
+        content_length += read_size;
+
+        // TODO: handle errors correctly
+        buffer = realloc(buffer, content_length);
+
+        memcpy(buffer + previous_length, line, read_size);
+    }
+
+    if (content != NULL) *content = buffer;
+
+    return content_length;
+}
+

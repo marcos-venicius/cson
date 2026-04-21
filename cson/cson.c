@@ -45,6 +45,30 @@ Cson* cson_load(const char *filepath) {
     return cson;
 }
 
+Cson* cson_load_from_content(char *content, size_t content_size) {
+    Cson_Lexer* lexer = new_cson_lexer("", content, content_size);
+
+    tokenize(lexer);
+    lex(lexer);
+
+    SyntaxTree *st = init_syntax_tree_parser(lexer);
+
+    syntax_tree_parse(st);
+
+    cson_lexer_free(lexer);
+
+    Cson* cson = malloc(sizeof(Cson));
+
+    if (cson == NULL) {
+        return NULL;
+    }
+
+    cson->ast = st;
+    cson->root = st->root;
+
+    return cson;
+}
+
 CsonItem cson_get(const SyntaxTreeNode *node, char *format, ...) {
     const SyntaxTreeNode *current = node;
 

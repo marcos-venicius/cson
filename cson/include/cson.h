@@ -24,6 +24,7 @@ typedef struct {
 } CsonItem;
 
 Cson *cson_load(const char *filepath);
+Cson *cson_load_from_content(char *content, size_t content_size);
 
 // Usage like: create_path(cson, "%s%s%d%s", "foo", "bar", 0, "bazz");
 // This will match: { foo: { bar: [ { bazz: 10 } ] } }
